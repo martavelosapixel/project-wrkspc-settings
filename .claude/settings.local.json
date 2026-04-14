@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(gh auth:*)",
+      "Bash(git --version)",
+      "Bash(npm --version)",
+      "Bash(/usr/local/bin/node --version)",
+      "Bash(/opt/homebrew/bin/node --version)",
+      "Bash(ls /opt/homebrew/opt/node*/bin/)",
+      "Read(//opt/local/**)",
+      "Bash('/Users/pixelmatters/Library/Application Support/com.raycast.macos/NodeJS/runtime/22.14.0/bin/node' --version)",
+      "Bash('/Users/pixelmatters/Library/Application Support/com.raycast.macos/NodeJS/runtime/22.14.0/bin/npm' --version)",
+      "Bash(ln -s /Users/pixelmatters/Documents/Vizrt/node_modules /Users/pixelmatters/Documents/Vizrt/Workspace/node_modules)",
+      "Bash(/Users/pixelmatters/Documents/Vizrt/node_modules/.bin/tsc --version)",
+      "Bash(/Users/pixelmatters/Documents/Vizrt/node_modules/.bin/tsc -b)",
+      "Bash('/Users/pixelmatters/Library/Application Support/com.raycast.macos/NodeJS/runtime/22.14.0/bin/node' /Users/pixelmatters/Documents/Vizrt/node_modules/.bin/tsc --version)",
+      "Bash('/Users/pixelmatters/Library/Application Support/com.raycast.macos/NodeJS/runtime/22.14.0/bin/node' ../node_modules/.bin/tsc -b)",
+      "Bash('/Users/pixelmatters/Library/Application Support/com.raycast.macos/NodeJS/runtime/22.14.0/bin/node' ../node_modules/.bin/vite --port 5174)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:5174/)",
+      "Bash(pkill -f \"vite.*5174\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
