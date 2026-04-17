@@ -1,9 +1,45 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type GraphicId = 'logo' | 'ticker' | 'timer' | 'agenda' | 'qa' | 'poll' | 'external' | 'waiting-room'
+type GraphicId = 'logo' | 'ticker' | 'timer' | 'agenda' | 'qa' | 'poll' | 'external' | 'waiting-room' | 'nametag' | 'social-feed'
 type Badge = 'default' | 'enterprise'
+type PermissionKey = 'add' | 'edit' | 'view' | 'interact'
+
+interface RolePermissions {
+  add: boolean
+  edit: boolean
+  view: boolean
+  interact: boolean
+}
+
+type GraphicPermissionMap = Record<string, Record<string, RolePermissions>>
+
+interface ColorPalette {
+  id: string
+  name: string
+  colors: string[]
+}
+
+const PERMISSION_LABELS: { key: PermissionKey; label: string }[] = [
+  { key: 'add',      label: 'Add'      },
+  { key: 'edit',     label: 'Edit'     },
+  { key: 'view',     label: 'View'     },
+  { key: 'interact', label: 'Interact' },
+]
+
+const ROLE_PERM_STYLES: Record<string, { color: string; dimColor: string }> = {
+  Admin:  { color: '#a5b4fc', dimColor: 'rgba(165,180,252,0.5)' },
+  Editor: { color: '#93c5fd', dimColor: 'rgba(147,197,253,0.5)' },
+  Viewer: { color: 'rgba(255,255,255,0.55)', dimColor: 'rgba(255,255,255,0.25)' },
+}
+
+const DEFAULT_ROLE_PERMISSIONS: Record<string, RolePermissions> = {
+  Admin:  { add: true,  edit: true,  view: true, interact: true  },
+  Editor: { add: true,  edit: true,  view: true, interact: true  },
+  Viewer: { add: false, edit: false, view: true, interact: true  },
+}
 
 interface Graphic {
   id: GraphicId
@@ -88,6 +124,28 @@ function ExternalIcon({ className }: { className?: string }) {
   )
 }
 
+function NameTagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="8" cy="6.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5 11.5C5 10.12 6.34 9 8 9C9.66 9 11 10.12 11 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SocialFeedIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="3" cy="8" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="13" cy="4" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="13" cy="12" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M4.5 7.25L11.5 4.75" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M4.5 8.75L11.5 11.25" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function WaitingRoomIcon({ className }: { className?: string }) {
   return (
     <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -95,6 +153,37 @@ function WaitingRoomIcon({ className }: { className?: string }) {
       <path d="M6.5 1H9.5V3H6.5V1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
       <circle cx="8" cy="7.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
       <path d="M5.5 12.5C5.5 11.12 6.62 10 8 10C9.38 10 10.5 11.12 10.5 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function LowerThirdIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="3.5" y="9" width="9" height="3" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M3.5 6H8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ScoreboardIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="1.5" y="3.5" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 3.5V12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M4.5 6.5H5.5M4.5 9H5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M10 6.5H11.5M10 9H11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SponsorBannerIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="1.5" y="5" width="13" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M5 8H11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M3.5 3L4.5 5M12.5 3L11.5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -146,17 +235,26 @@ function CheckIcon() {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const GRAPHICS: Graphic[] = [
+  { id: 'nametag',      name: 'Name Tag',          description: 'Personal information display shown alongside participants',        badge: 'default',  Icon: NameTagIcon     },
   { id: 'logo',         name: 'Logo',             description: 'Display your organization logo as a branded meeting overlay',   badge: 'default',    Icon: LogoIcon        },
   { id: 'ticker',       name: 'Ticker',            description: 'Scrolling text banner for live announcements and news feeds',   badge: 'default',    Icon: TickerIcon      },
   { id: 'timer',        name: 'Timer',             description: 'Countdown or elapsed time display visible to all participants', badge: 'default',    Icon: TimerIcon       },
   { id: 'agenda',       name: 'Agenda',            description: 'Structured meeting agenda shown alongside the video feed',      badge: 'default',    Icon: AgendaIcon      },
   { id: 'qa',           name: 'Q&A',               description: 'Interactive Q&A panel to collect and display audience questions', badge: 'default',  Icon: QAIcon          },
   { id: 'poll',         name: 'Poll',              description: 'Live polling to engage participants and gather real-time feedback', badge: 'default', Icon: PollIcon        },
-  { id: 'external',     name: 'External Content',  description: 'Embed third-party media, websites, or interactive content',    badge: 'enterprise', Icon: ExternalIcon    },
-  { id: 'waiting-room', name: 'Waiting Room',      description: 'Branded pre-meeting area displayed to participants before start', badge: 'default',  Icon: WaitingRoomIcon },
+  { id: 'external',     name: 'External Content',  description: 'Embed third-party media, websites, or interactive content',    badge: 'default',    Icon: ExternalIcon    },
+  { id: 'waiting-room',    name: 'Waiting Room',     description: 'Branded pre-meeting area displayed to participants before start',    badge: 'default',    Icon: WaitingRoomIcon    },
+  { id: 'social-feed',    name: 'Social Feed',      description: 'Live social media posts displayed during the meeting',                badge: 'default',    Icon: SocialFeedIcon     },
+  { id: 'lower-third',    name: 'Lower Third',      description: 'Branded speaker name and title overlay anchored to the bottom frame', badge: 'enterprise', Icon: LowerThirdIcon     },
+  { id: 'scoreboard',     name: 'Scoreboard',       description: 'Live score display for competitions, debates and sports events',      badge: 'enterprise', Icon: ScoreboardIcon     },
+  { id: 'sponsor-banner', name: 'Sponsor Banner',   description: 'Rotating sponsor logos and branded ad placements during the meeting', badge: 'enterprise', Icon: SponsorBannerIcon  },
 ]
 
-const BRAND_COLORS_DEFAULT = ['#615fff', '#0283ff', '#ffa726', '#ef4444', '#10b981']
+const BRAND_PALETTES_DEFAULT: ColorPalette[] = [
+  { id: 'primary',   name: 'Primary Colors',   colors: ['#615fff', '#0283ff'] },
+  { id: 'secondary', name: 'Secondary Colors',  colors: ['#ffa726', '#ef4444', '#10b981'] },
+  { id: 'font',      name: 'Font Colors',       colors: ['#fafaf9', '#94a3b8'] },
+]
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
@@ -203,7 +301,7 @@ function BadgeChip({ type }: { type: Badge }) {
   if (type === 'enterprise') {
     return (
       <span
-        className="text-[10px] font-semibold px-[7px] py-[2px] rounded-full uppercase tracking-wide"
+        className="text-[10px] font-medium px-[7px] py-[2px] rounded-full"
         style={{ color: '#93c5fd', background: 'rgba(2,131,255,0.12)' }}
       >
         Enterprise
@@ -233,6 +331,210 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   )
 }
 
+// ─── Social platform icons ────────────────────────────────────────────────────
+
+function XIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M1 1L5.8 7.35M1 13L7.6 5.5M5.8 7.35L8.2 13M5.8 7.35L13 1M8.2 13H10.5L13 1H10.8L8.2 13Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function InstagramIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect x="1.5" y="1.5" width="11" height="11" rx="3" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="10.5" cy="3.5" r="0.65" fill="currentColor" />
+    </svg>
+  )
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M12.5 7.14C12.5 6.66 12.46 6.3 12.37 5.93H7.14V8.13H10.2C10.14 8.63 9.82 9.38 9.1 9.89L9.09 9.97L10.74 11.24L10.85 11.25C11.9 10.27 12.5 8.83 12.5 7.14Z" fill="currentColor" fillOpacity="0.6" />
+      <path d="M7.14 12.5C8.64 12.5 9.9 12.01 10.85 11.25L9.1 9.89C8.62 10.22 7.97 10.45 7.14 10.45C5.68 10.45 4.44 9.47 3.98 8.12L3.9 8.13L2.19 9.44L2.17 9.52C3.11 11.38 4.98 12.5 7.14 12.5Z" fill="currentColor" fillOpacity="0.5" />
+      <path d="M3.98 8.12C3.86 7.75 3.79 7.36 3.79 6.96C3.79 6.56 3.86 6.17 3.97 5.8L3.97 5.72L2.24 4.39L2.17 4.42C1.77 5.22 1.5 6.07 1.5 6.96C1.5 7.85 1.77 8.7 2.17 9.52L3.98 8.12Z" fill="currentColor" fillOpacity="0.7" />
+      <path d="M7.14 3.47C8.18 3.47 8.88 3.91 9.28 4.28L10.89 2.72C9.9 1.8 8.64 1.5 7.14 1.5C4.98 1.5 3.11 2.62 2.17 4.42L3.97 5.8C4.44 4.45 5.68 3.47 7.14 3.47Z" fill="currentColor" fillOpacity="0.8" />
+    </svg>
+  )
+}
+
+function ThreadsIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M9.5 6.5C9.5 5.12 8.38 4 7 4C5.62 4 4.5 5.12 4.5 6.5V7.5C4.5 9.43 6.07 11 8 11C9.1 11 9.5 10.5 9.5 10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M9.5 5.5C9.5 3.57 7.93 2 6 2C4.34 2 3 3.12 3 5V9C3 11.21 4.79 13 7 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="9.5" cy="7" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+function BlueskyIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 4.5C7 4.5 4.5 2 2.5 2C2.5 2 2 5 4 6.5C4 6.5 2 6.5 1.5 8C1.5 8 3.5 8.5 5 7.5C5 7.5 5 10.5 7 12C7 12 9 10.5 9 7.5C9 7.5 10.5 8.5 12.5 8C12.5 8 12 6.5 10 6.5C10 6.5 12 5 11.5 2C11.5 2 9.5 2 7 4.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// ─── Social platforms data ────────────────────────────────────────────────────
+
+const SOCIAL_PLATFORMS = [
+  { id: 'x',         name: 'X',         Icon: XIcon,         color: '#fafaf9' },
+  { id: 'instagram', name: 'Instagram',  Icon: InstagramIcon, color: '#e879a0' },
+  { id: 'google',    name: 'Google',     Icon: GoogleIcon,    color: '#4285f4' },
+  { id: 'threads',   name: 'Threads',    Icon: ThreadsIcon,   color: '#fafaf9' },
+  { id: 'bluesky',   name: 'Bluesky',    Icon: BlueskyIcon,   color: '#0285ff' },
+]
+
+// ─── Graphic permission panel ─────────────────────────────────────────────────
+
+function RolesIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <circle cx="4.5" cy="3.5" r="1.8" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M1 10V9.5C1 7.85 2.62 6.5 4.5 6.5C6.38 6.5 8 7.85 8 9.5V10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M9 4.5V7.5M10.5 6H7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+interface GraphicPermissionPanelProps {
+  permissions: Record<string, RolePermissions>
+  onChange: (role: string, key: PermissionKey, value: boolean) => void
+}
+
+function GraphicPermissionPanel({ permissions, onChange }: GraphicPermissionPanelProps) {
+  const roles = ['Admin', 'Editor', 'Viewer']
+
+  return (
+    <div
+      className="rounded-[8px] overflow-hidden"
+      style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
+    >
+        {/* Column headers */}
+        <div
+          className="flex items-center px-[14px] py-[8px]"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+        >
+          <span className="flex-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            Role
+          </span>
+          {PERMISSION_LABELS.map(({ key, label }) => (
+            <span
+              key={key}
+              className="text-[10px] font-semibold uppercase tracking-wide text-center"
+              style={{ width: 68, color: 'rgba(255,255,255,0.25)' }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Role rows */}
+        {roles.map((role, ri) => {
+          const perms = permissions[role]
+          const isAdmin = role === 'Admin'
+          const { color } = ROLE_PERM_STYLES[role]
+          return (
+            <div
+              key={role}
+              className="flex items-center px-[14px] py-[9px]"
+              style={{ borderBottom: ri < roles.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+            >
+              {/* Role label */}
+              <div className="flex-1 relative group/adminlabel">
+                <div className="flex items-center gap-[6px]">
+                  <span
+                    className="w-[7px] h-[7px] rounded-full shrink-0"
+                    style={{ background: color }}
+                  />
+                  <span className="text-[12px] font-medium" style={{ color }}>
+                    {role}
+                  </span>
+                  {isAdmin && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ color, opacity: 0.6 }}>
+                      <rect x="1.5" y="4.5" width="7" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                      <path d="M3 4.5V3.5C3 2.12 3.9 1.5 5 1.5C6.1 1.5 7 2.12 7 3.5V4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </div>
+                {isAdmin && (
+                  <div
+                    className="absolute left-0 bottom-full mb-[6px] px-[8px] py-[4px] rounded-[6px] whitespace-nowrap pointer-events-none opacity-0 group-hover/adminlabel:opacity-100 transition-opacity duration-150"
+                    style={{
+                      background: '#2a2b30',
+                      border: '1px solid rgba(255,255,255,0.09)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                      Admin always has access
+                    </span>
+                    <div
+                      className="absolute top-full left-[16px]"
+                      style={{
+                        width: 0, height: 0,
+                        borderLeft: '5px solid transparent',
+                        borderRight: '5px solid transparent',
+                        borderTop: '5px solid #2a2b30',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Permission checkboxes */}
+              {PERMISSION_LABELS.map(({ key }) => {
+                const isOn = perms[key]
+                return (
+                  <div key={key} className="flex justify-center" style={{ width: 68 }}>
+                    <button
+                      onClick={() => { if (!isAdmin) onChange(role, key, !isOn) }}
+                      className="w-[20px] h-[20px] rounded-[5px] flex items-center justify-center border-0 transition-all"
+                      style={{
+                        background: isAdmin && isOn
+                          ? 'rgba(255,255,255,0.07)'
+                          : isOn
+                          ? 'rgba(2,131,255,0.18)'
+                          : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${
+                          isAdmin && isOn
+                            ? 'rgba(255,255,255,0.12)'
+                            : isOn
+                            ? 'rgba(2,131,255,0.4)'
+                            : 'rgba(255,255,255,0.1)'
+                        }`,
+                        cursor: isAdmin ? 'default' : 'pointer',
+                      }}
+                      onMouseEnter={e => { if (!isAdmin && !isOn) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)' }}
+                      onMouseLeave={e => { if (!isAdmin && !isOn) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)' }}
+                    >
+                      {isOn && (
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path
+                            d="M1.5 5L3.5 7L8.5 2.5"
+                            stroke={isAdmin ? 'rgba(255,255,255,0.3)' : '#0283ff'}
+                            strokeWidth="1.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })}
+    </div>
+  )
+}
+
 // ─── Graphic row ─────────────────────────────────────────────────────────────
 
 interface GraphicRowProps {
@@ -240,51 +542,67 @@ interface GraphicRowProps {
   enabled: boolean
   onToggle: () => void
   isLast: boolean
+  children?: React.ReactNode
+  permissions: Record<string, RolePermissions>
+  onPermissionChange: (role: string, key: PermissionKey, value: boolean) => void
 }
 
-function GraphicRow({ graphic, enabled, onToggle, isLast }: GraphicRowProps) {
-  const { name, description, badge, Icon } = graphic
+function GraphicRow({ graphic, enabled, onToggle, isLast, children, permissions, onPermissionChange }: GraphicRowProps) {
+  const [showPerms, setShowPerms] = useState(false)
+  const { name, description, badge } = graphic
   return (
     <div
-      className="flex items-center gap-[14px] px-[20px] py-[14px] transition-colors"
-      style={{
-        borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)',
-      }}
+      className="transition-colors"
+      style={{ borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)' }}
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.015)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      {/* Icon */}
-      <div
-        className="w-[36px] h-[36px] rounded-[9px] flex items-center justify-center shrink-0"
-        style={{
-          background: enabled ? 'rgba(2,131,255,0.12)' : 'rgba(255,255,255,0.06)',
-          color: enabled ? '#60a5fa' : 'rgba(255,255,255,0.35)',
-        }}
-      >
-        <Icon />
-      </div>
-
-      {/* Name + description */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-[8px] mb-[2px]">
-          <span className="font-medium text-[13px] text-[#fafaf9]">{name}</span>
-          <BadgeChip type={badge} />
+      {/* Main row */}
+      <div className="flex items-center gap-[12px] px-[20px] py-[14px]">
+        {/* Name + description */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-[8px] mb-[2px]">
+            <span className="font-medium text-[13px] text-[#fafaf9]">{name}</span>
+            <BadgeChip type={badge} />
+          </div>
+          <p className="text-[12px] leading-[16px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            {description}
+          </p>
         </div>
-        <p className="text-[12px] leading-[16px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-          {description}
-        </p>
+        {/* Role permissions button */}
+        <button
+          onClick={() => setShowPerms(v => !v)}
+          className="flex items-center gap-[5px] px-[8px] py-[5px] rounded-[6px] border-0 cursor-pointer shrink-0 text-[11px] font-medium transition-all"
+          style={{
+            background: showPerms ? 'rgba(2,131,255,0.15)' : 'rgba(255,255,255,0.05)',
+            color: showPerms ? '#60a5fa' : 'rgba(255,255,255,0.4)',
+            border: `1px solid ${showPerms ? 'rgba(2,131,255,0.4)' : 'rgba(255,255,255,0.07)'}`,
+          }}
+          onMouseEnter={e => { if (!showPerms) { (e.currentTarget as HTMLButtonElement).style.color = '#fafaf9'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)' } }}
+          onMouseLeave={e => { if (!showPerms) { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)' } }}
+        >
+          <RolesIcon />
+          Roles
+        </button>
+        {/* Toggle */}
+        <div className="flex items-center shrink-0">
+          <Toggle on={enabled} onChange={onToggle} />
+        </div>
       </div>
 
-      {/* Status label + toggle */}
-      <div className="flex items-center gap-[10px] shrink-0">
-        <span
-          className="text-[12px] font-medium"
-          style={{ color: enabled ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)' }}
-        >
-          {enabled ? 'Enabled' : 'Disabled'}
-        </span>
-        <Toggle on={enabled} onChange={onToggle} />
-      </div>
+      {/* Role permission matrix */}
+      {showPerms && (
+        <div className="px-[20px] pb-[14px]">
+          <GraphicPermissionPanel permissions={permissions} onChange={onPermissionChange} />
+        </div>
+      )}
+
+      {/* Expandable children (e.g. social feed platforms) */}
+      {enabled && children && (
+        <div className="px-[20px] pb-[16px]">
+          {children}
+        </div>
+      )}
     </div>
   )
 }
@@ -301,23 +619,13 @@ interface ConstraintRowProps {
   children?: React.ReactNode
 }
 
-function ConstraintRow({ Icon, title, description, enabled, onToggle, isLast, children }: ConstraintRowProps) {
+function ConstraintRow({ title, description, enabled, onToggle, isLast, children }: Omit<ConstraintRowProps, 'Icon'>) {
   return (
     <div
       className="px-[20px] py-[14px] transition-colors"
       style={{ borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)' }}
     >
       <div className="flex items-start gap-[14px]">
-        <div
-          className="w-[36px] h-[36px] rounded-[9px] flex items-center justify-center shrink-0 mt-[1px]"
-          style={{
-            background: enabled ? 'rgba(2,131,255,0.12)' : 'rgba(255,255,255,0.06)',
-            color: enabled ? '#60a5fa' : 'rgba(255,255,255,0.35)',
-          }}
-        >
-          <Icon />
-        </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-[12px]">
             <div>
@@ -326,13 +634,7 @@ function ConstraintRow({ Icon, title, description, enabled, onToggle, isLast, ch
                 {description}
               </p>
             </div>
-            <div className="flex items-center gap-[10px] shrink-0 mt-[1px]">
-              <span
-                className="text-[12px] font-medium"
-                style={{ color: enabled ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)' }}
-              >
-                {enabled ? 'On' : 'Off'}
-              </span>
+            <div className="flex items-center shrink-0 mt-[1px]">
               <Toggle on={enabled} onChange={onToggle} />
             </div>
           </div>
@@ -352,69 +654,576 @@ function ConstraintRow({ Icon, title, description, enabled, onToggle, isLast, ch
   )
 }
 
-// ─── Color palette editor ─────────────────────────────────────────────────────
+// ─── Font Picker ──────────────────────────────────────────────────────────────
 
-interface ColorPaletteProps {
-  colors: string[]
-  onChange: (colors: string[]) => void
+const FONT_OPTIONS = [
+  { name: 'Plus Jakarta Sans', family: "'Plus Jakarta Sans', sans-serif" },
+  { name: 'Inter',             family: "'Inter', sans-serif" },
+  { name: 'DM Sans',           family: "'DM Sans', sans-serif" },
+  { name: 'Lato',              family: "'Lato', sans-serif" },
+  { name: 'Montserrat',        family: "'Montserrat', sans-serif" },
+  { name: 'Roboto',            family: "'Roboto', sans-serif" },
+  { name: 'Nunito',            family: "'Nunito', sans-serif" },
+]
+
+const GOOGLE_FONTS_URL =
+  "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Inter:wght@400;500&family=DM+Sans:wght@400;500&family=Lato:wght@400;700&family=Montserrat:wght@400;500&family=Roboto:wght@400;500&family=Nunito:wght@400;500&display=swap"
+
+interface FontPickerProps {
+  selected: string
+  onChange: (font: string) => void
 }
 
-function ColorPaletteEditor({ colors, onChange }: ColorPaletteProps) {
-  const addColor = () => {
-    const sample = ['#a78bfa', '#fb923c', '#34d399', '#f472b6', '#facc15']
-    const next = sample.find(c => !colors.includes(c)) ?? '#888888'
-    onChange([...colors, next])
+function FontPicker({ selected, onChange }: FontPickerProps) {
+  const [open, setOpen] = useState(false)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const selectedOption = FONT_OPTIONS.find(f => f.name === selected) ?? FONT_OPTIONS[0]
+
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left })
+    }
+    setOpen(v => !v)
   }
 
-  const removeColor = (i: number) => {
-    onChange(colors.filter((_, idx) => idx !== i))
-  }
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (
+        !triggerRef.current?.contains(target) &&
+        !dropdownRef.current?.contains(target)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const dropdown = open
+    ? createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            zIndex: 9999,
+            background: '#1c1d21',
+            border: '1px solid rgba(255,255,255,0.09)',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.55)',
+            borderRadius: 10,
+            minWidth: 220,
+          }}
+        >
+          <div className="p-[4px] flex flex-col gap-[1px]">
+            {FONT_OPTIONS.map(font => {
+              const isActive = font.name === selected
+              return (
+                <button
+                  key={font.name}
+                  onClick={() => { onChange(font.name); setOpen(false) }}
+                  className="flex items-center gap-[10px] w-full px-[10px] py-[8px] rounded-[7px] cursor-pointer border-0 text-left"
+                  style={{
+                    background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)' }}
+                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                >
+                  <span
+                    className="text-[15px] font-semibold w-[28px] text-center shrink-0"
+                    style={{
+                      fontFamily: font.family,
+                      color: isActive ? '#fafaf9' : 'rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    Aa
+                  </span>
+                  <span
+                    className="flex-1 text-[12px] font-medium leading-[15px]"
+                    style={{
+                      fontFamily: font.family,
+                      color: isActive ? '#fafaf9' : 'rgba(255,255,255,0.65)',
+                    }}
+                  >
+                    {font.name}
+                  </span>
+                  {isActive && (
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 6.5L5 9.5L11 3.5" stroke="#0283ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>,
+        document.body
+      )
+    : null
 
   return (
-    <div>
-      <p className="text-[11px] font-medium mb-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-        APPROVED BRAND COLORS
-      </p>
-      <div className="flex items-center flex-wrap gap-[8px]">
-        {colors.map((color, i) => (
-          <div key={i} className="relative group/swatch">
-            <div
-              className="w-[32px] h-[32px] rounded-[8px] cursor-pointer transition-transform hover:scale-110"
-              style={{ background: color, border: '2px solid rgba(255,255,255,0.15)' }}
-            />
-            <button
-              onClick={() => removeColor(i)}
-              className="absolute -top-[5px] -right-[5px] w-[14px] h-[14px] rounded-full bg-[#1a1b1e] border border-[rgba(255,255,255,0.15)] items-center justify-center cursor-pointer hidden group-hover/swatch:flex"
-              style={{ color: 'rgba(255,255,255,0.6)' }}
-            >
-              <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
-                <path d="M1 1L6 6M6 1L1 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-            </button>
-            {/* Tooltip */}
-            <div
-              className="absolute bottom-[38px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:block pointer-events-none px-[8px] py-[4px] rounded-[5px] whitespace-nowrap"
-              style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">{color}</span>
-            </div>
-          </div>
-        ))}
-        {colors.length < 12 && (
-          <button
-            onClick={addColor}
-            className="w-[32px] h-[32px] rounded-[8px] flex items-center justify-center cursor-pointer border-0 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px dashed rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.4)' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#fafaf9')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+    <>
+      {/* Inject Google Fonts once */}
+      <style>{`@import url('${GOOGLE_FONTS_URL}');`}</style>
+
+      <div className="flex items-start gap-[14px]">
+        {/* Trigger button */}
+        <button
+          ref={triggerRef}
+          onClick={handleOpen}
+          className="flex items-center gap-[10px] px-[12px] py-[8px] rounded-[8px] cursor-pointer border-0 text-left shrink-0"
+          style={{
+            background: open ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${open ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)'}`,
+            transition: 'background 0.15s, border-color 0.15s',
+          }}
+          onMouseEnter={e => { if (!open) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)' }}
+          onMouseLeave={e => { if (!open) (e.currentTarget as HTMLButtonElement).style.background = open ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)' }}
+        >
+          <span
+            className="text-[15px] font-semibold text-[#fafaf9] w-[24px] text-center shrink-0"
+            style={{ fontFamily: selectedOption.family }}
           >
-            <PlusSmIcon />
-          </button>
-        )}
+            Aa
+          </span>
+          <div>
+            <p
+              className="text-[12px] font-medium text-[#fafaf9] leading-[15px]"
+              style={{ fontFamily: selectedOption.family }}
+            >
+              {selectedOption.name}
+            </p>
+            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              Organization default
+            </p>
+          </div>
+          <svg
+            width="12" height="12" viewBox="0 0 12 12" fill="none"
+            style={{
+              color: 'rgba(255,255,255,0.4)',
+              marginLeft: 4,
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.15s',
+            }}
+          >
+            <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+      </div>
+
+      {dropdown}
+    </>
+  )
+}
+
+// ─── Color palette editor ─────────────────────────────────────────────────────
+
+function AddColorButton({ onAdd }: { onAdd: (color: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="color"
+        defaultValue="#888888"
+        className="sr-only"
+        onBlur={e => onAdd(e.target.value)}
+      />
+      <button
+        onClick={() => inputRef.current?.click()}
+        className="w-[32px] h-[32px] rounded-[8px] flex items-center justify-center cursor-pointer border-0 transition-colors"
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          border: '1.5px dashed rgba(255,255,255,0.18)',
+          color: 'rgba(255,255,255,0.4)',
+        }}
+        onMouseEnter={e => {
+          ;(e.currentTarget as HTMLButtonElement).style.color = '#fafaf9'
+          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.3)'
+        }}
+        onMouseLeave={e => {
+          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)'
+          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'
+        }}
+      >
+        <PlusSmIcon />
+      </button>
+    </div>
+  )
+}
+
+interface ColorPaletteEditorProps {
+  palettes: ColorPalette[]
+  onChange: (palettes: ColorPalette[]) => void
+}
+
+function ColorPaletteEditor({ palettes, onChange }: ColorPaletteEditorProps) {
+  const updateName = (id: string, name: string) =>
+    onChange(palettes.map(p => (p.id === id ? { ...p, name } : p)))
+
+  const editColor = (id: string, i: number, color: string) =>
+    onChange(
+      palettes.map(p =>
+        p.id === id ? { ...p, colors: p.colors.map((c, ci) => (ci === i ? color : c)) } : p
+      )
+    )
+
+  const removeColor = (id: string, i: number) =>
+    onChange(
+      palettes.map(p =>
+        p.id === id ? { ...p, colors: p.colors.filter((_, ci) => ci !== i) } : p
+      )
+    )
+
+  const addColor = (id: string, color: string) =>
+    onChange(
+      palettes.map(p =>
+        p.id === id && p.colors.length < 6 ? { ...p, colors: [...p.colors, color] } : p
+      )
+    )
+
+  const removePalette = (id: string) =>
+    onChange(palettes.filter(p => p.id !== id))
+
+  const addPalette = () =>
+    onChange([...palettes, { id: `palette-${Date.now()}`, name: 'New Palette', colors: [] }])
+
+  return (
+    <div className="flex flex-col">
+      {palettes.map((palette, pi) => (
+        <div key={palette.id}>
+          {pi > 0 && <div className="my-[14px]" />}
+
+          {/* Palette header: editable name + remove button */}
+          <div className="flex items-center justify-between gap-[6px] mb-[10px] group/palettename">
+            <div className="flex items-center gap-[5px] min-w-0">
+              <input
+                value={palette.name}
+                onChange={e => updateName(palette.id, e.target.value)}
+                className="text-[11px] font-semibold uppercase tracking-wide bg-transparent border-0 outline-none p-0 cursor-text"
+                style={{
+                  color: 'rgba(255,255,255,0.4)',
+                  width: `${Math.max(palette.name.length * 7.5 + 4, 60)}px`,
+                }}
+              />
+              <svg
+                width="9" height="9" viewBox="0 0 9 9" fill="none"
+                className="opacity-0 group-hover/palettename:opacity-100 transition-opacity shrink-0"
+                style={{ color: 'rgba(255,255,255,0.3)' }}
+              >
+                <path d="M1 6.5L5.5 2L7 3.5L2.5 8H1V6.5Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <button
+              onClick={() => removePalette(palette.id)}
+              className="opacity-0 group-hover/palettename:opacity-100 transition-opacity flex items-center gap-[4px] px-[6px] py-[3px] rounded-[5px] border-0 cursor-pointer text-[10px] font-medium shrink-0"
+              style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)' }}
+              onMouseEnter={e => { ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.12)'; ;(e.currentTarget as HTMLButtonElement).style.color = '#f87171' }}
+              onMouseLeave={e => { ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)' }}
+            >
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                <path d="M1 1L7 7M7 1L1 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              Remove
+            </button>
+          </div>
+
+          {/* Swatches row */}
+          <div className="flex items-center flex-wrap gap-[8px]">
+            {palette.colors.map((color, i) => (
+              <div key={i} className="relative group/swatch">
+                {/* Color input inside label — clicking the swatch opens picker */}
+                <label className="block cursor-pointer">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={e => editColor(palette.id, i, e.target.value)}
+                    className="sr-only"
+                  />
+                  <div
+                    className="w-[32px] h-[32px] rounded-[8px] transition-transform group-hover/swatch:scale-110"
+                    style={{ background: color, border: '2px solid rgba(255,255,255,0.15)' }}
+                  />
+                </label>
+                {/* Remove button — outside label to avoid triggering picker */}
+                <button
+                  onClick={() => removeColor(palette.id, i)}
+                  className="absolute -top-[5px] -right-[5px] w-[14px] h-[14px] rounded-full bg-[#1a1b1e] border border-[rgba(255,255,255,0.15)] items-center justify-center cursor-pointer hidden group-hover/swatch:flex z-10"
+                  style={{ color: 'rgba(255,255,255,0.6)' }}
+                >
+                  <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                    <path d="M1 1L6 6M6 1L1 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                </button>
+                {/* Hex tooltip */}
+                <div
+                  className="absolute bottom-[38px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:block pointer-events-none px-[8px] py-[4px] rounded-[5px] whitespace-nowrap z-10"
+                  style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">
+                    {color}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {palette.colors.length < 6 && (
+              <AddColorButton onAdd={color => addColor(palette.id, color)} />
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Add new palette */}
+      <div className="mt-[14px]">
+        <button
+          onClick={addPalette}
+          className="flex items-center gap-[6px] px-[10px] py-[6px] rounded-[7px] border-0 cursor-pointer text-[11px] font-medium transition-colors"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px dashed rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.4)',
+          }}
+          onMouseEnter={e => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = '#fafaf9'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)'
+          }}
+          onMouseLeave={e => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'
+          }}
+        >
+          <PlusSmIcon />
+          Add palette
+        </button>
       </div>
     </div>
   )
 }
+
+// ─── Image uploader ───────────────────────────────────────────────────────────
+
+interface ImageUploaderProps {
+  value: string | null
+  onChange: (url: string | null) => void
+  label: string
+  hint?: string
+}
+
+function ImageUploader({ value, onChange, label, hint }: ImageUploaderProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    onChange(URL.createObjectURL(file))
+  }
+
+  return (
+    <div>
+      <input ref={inputRef} type="file" accept="image/*" className="sr-only" onChange={handleFile} />
+      {value ? (
+        <div className="flex items-center gap-[14px]">
+          <div
+            className="w-[72px] h-[44px] rounded-[8px] flex items-center justify-center overflow-hidden shrink-0"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <img src={value} alt="" className="max-w-full max-h-full object-contain" />
+          </div>
+          <div className="flex flex-col gap-[5px]">
+            <button
+              onClick={() => inputRef.current?.click()}
+              className="text-[12px] font-medium cursor-pointer border-0 bg-transparent p-0 text-left"
+              style={{ color: '#0283ff' }}
+            >
+              Replace image
+            </button>
+            <button
+              onClick={() => { onChange(null); if (inputRef.current) inputRef.current.value = '' }}
+              className="text-[12px] font-medium cursor-pointer border-0 bg-transparent p-0 text-left"
+              style={{ color: 'rgba(255,255,255,0.35)' }}
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="w-full flex flex-col items-center justify-center gap-[8px] py-[18px] rounded-[8px] cursor-pointer border-0 transition-colors"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px dashed rgba(255,255,255,0.12)' }}
+          onMouseEnter={e => { ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)' }}
+          onMouseLeave={e => { ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)'; ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)' }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="7" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M2 14.5L6.5 10L9.5 13L13 9L18 14.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div className="text-center">
+            <p className="text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>{label}</p>
+            {hint && <p className="text-[11px] mt-[2px]" style={{ color: 'rgba(255,255,255,0.28)' }}>{hint}</p>}
+          </div>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ─── URL input ────────────────────────────────────────────────────────────────
+
+function UrlInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div
+      className="flex items-center gap-[8px] px-[12px] py-[8px] rounded-[8px]"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+    >
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+        <path d="M5.5 8.5L7.5 6.5M7 3.5L8 2.5C9.1 1.4 10.9 1.4 12 2.5C13.1 3.6 13.1 5.4 12 6.5L11 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M6 9.5L5 10.5C3.9 11.6 2.1 11.6 1 10.5C-0.1 9.4 -0.1 7.6 1 6.5L2 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+      <input
+        type="url"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder ?? 'https://'}
+        className="flex-1 bg-transparent border-0 outline-none text-[12px] font-medium"
+        style={{ color: value ? '#fafaf9' : undefined }}
+      />
+    </div>
+  )
+}
+
+// ─── PDF uploader ─────────────────────────────────────────────────────────────
+
+function PdfUploader({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    onChange(file.name)
+  }
+  return (
+    <div>
+      <input ref={inputRef} type="file" accept="application/pdf" className="sr-only" onChange={handleFile} />
+      {value ? (
+        <div
+          className="flex items-center gap-[12px] px-[12px] py-[10px] rounded-[8px]"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <div
+            className="w-[32px] h-[32px] rounded-[6px] flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(2,131,255,0.1)' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ color: '#0283ff' }}>
+              <path d="M3 1.5H8.5L11.5 4.5V12.5H3V1.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+              <path d="M8.5 1.5V4.5H11.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+              <path d="M5 7H9M5 9H7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <p className="flex-1 text-[12px] font-medium text-[#fafaf9] truncate">{value}</p>
+          <div className="flex items-center gap-[10px]">
+            <button
+              onClick={() => inputRef.current?.click()}
+              className="text-[11px] font-medium border-0 bg-transparent cursor-pointer p-0"
+              style={{ color: '#0283ff' }}
+            >
+              Replace
+            </button>
+            <button
+              onClick={() => { onChange(null); if (inputRef.current) inputRef.current.value = '' }}
+              className="text-[11px] font-medium border-0 bg-transparent cursor-pointer p-0"
+              style={{ color: 'rgba(255,255,255,0.4)' }}
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="w-full flex flex-col items-center justify-center gap-[8px] py-[18px] rounded-[8px] cursor-pointer border-0 transition-colors"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px dashed rgba(255,255,255,0.12)' }}
+          onMouseEnter={e => { ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)' }}
+          onMouseLeave={e => { ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)'; ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)' }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            <path d="M4 2H13L17 6V18H4V2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M13 2V6H17" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M7 10H13M7 13H10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          </svg>
+          <div className="text-center">
+            <p className="text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>Upload PDF</p>
+            <p className="text-[11px] mt-[2px]" style={{ color: 'rgba(255,255,255,0.28)' }}>PDF files only · Max 50MB</p>
+          </div>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ─── External source types ────────────────────────────────────────────────────
+
+type ExternalSourceType = 'link' | 'image' | 'video' | 'pdf' | 'slides'
+
+const EXTERNAL_SOURCE_TYPES: { id: ExternalSourceType; label: string; Icon: () => React.ReactElement }[] = [
+  {
+    id: 'link', label: 'Link',
+    Icon: () => (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M4.5 7.5L7.5 4.5M7 2.5L7.5 2C8.33 1.17 9.67 1.17 10.5 2C11.33 2.83 11.33 4.17 10.5 5L10 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M5 9.5L4.5 10C3.67 10.83 2.33 10.83 1.5 10C0.67 9.17 0.67 7.83 1.5 7L2 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'image', label: 'Image',
+    Icon: () => (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="2.5" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+        <circle cx="4" cy="5.5" r="1" fill="currentColor" />
+        <path d="M1 8.5L3.5 6.5L5 8L7 5.5L11 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'video', label: 'Video',
+    Icon: () => (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M1.5 3.5H7.5V8.5H1.5V3.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M7.5 5L10.5 3.5V8.5L7.5 7" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'pdf', label: 'PDF',
+    Icon: () => (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M2.5 1H7.5L10 3.5V11H2.5V1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M7.5 1V3.5H10" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M4.5 6.5H7.5M4.5 8H6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'slides', label: 'Slides',
+    Icon: () => (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="1.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M4 10.5H8M6 8.5V10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+]
 
 // ─── WorkspacePage ────────────────────────────────────────────────────────────
 
@@ -425,24 +1234,91 @@ interface GraphicState {
 interface BrandingState {
   colorLock: boolean
   fontLock: boolean
+  logoLock: boolean
   customGraphics: boolean
 }
 
-export default function WorkspacePage() {
+export default function WorkspacePage({ section }: { section: 'graphics' | 'branding' }) {
   const [graphics, setGraphics] = useState<GraphicState>({
     logo: true, ticker: true, timer: true, agenda: true,
     qa: true, poll: false, external: false, 'waiting-room': true,
+    nametag: true, 'social-feed': true,
+    'lower-third': true, scoreboard: false, 'sponsor-banner': false,
   })
 
   const [branding, setBranding] = useState<BrandingState>({
     colorLock: true,
     fontLock: true,
+    logoLock: true,
     customGraphics: true,
   })
 
-  const [brandColors, setBrandColors] = useState<string[]>(BRAND_COLORS_DEFAULT)
+  const [logoFile, setLogoFile] = useState<string | null>(null)
+  const [externalContentType, setExternalContentType] = useState<ExternalSourceType>('link')
+  const [externalLinkUrl, setExternalLinkUrl] = useState('')
+  const [externalVideoUrl, setExternalVideoUrl] = useState('')
+  const [externalSlidesUrl, setExternalSlidesUrl] = useState('')
+  const [externalContentImageFile, setExternalContentImageFile] = useState<string | null>(null)
+  const [externalContentPdfName, setExternalContentPdfName] = useState<string | null>(null)
+  const [waitingRoomBackground, setWaitingRoomBackground] = useState<string | null>(null)
+
+  const [graphicPermissions, setGraphicPermissions] = useState<GraphicPermissionMap>(() =>
+    Object.fromEntries(GRAPHICS.map(g => [g.id, { ...DEFAULT_ROLE_PERMISSIONS }]))
+  )
+
+  const updateGraphicPermission = (graphicId: string, role: string, key: PermissionKey, value: boolean) => {
+    setGraphicPermissions(prev => ({
+      ...prev,
+      [graphicId]: {
+        ...prev[graphicId],
+        [role]: { ...prev[graphicId][role], [key]: value },
+      },
+    }))
+    setDirty(true)
+    setSaved(false)
+  }
+
+  const [brandPalettes, setBrandPalettes] = useState<ColorPalette[]>(BRAND_PALETTES_DEFAULT)
+  const [selectedFont, setSelectedFont] = useState('Plus Jakarta Sans')
+  const [brandingPermissions, setBrandingPermissions] = useState<GraphicPermissionMap>({
+    colorLock:      { ...DEFAULT_ROLE_PERMISSIONS },
+    fontLock:       { ...DEFAULT_ROLE_PERMISSIONS },
+    customGraphics: { ...DEFAULT_ROLE_PERMISSIONS },
+  })
+
+  const updateBrandingPermission = (constraint: string, role: string, key: PermissionKey, value: boolean) => {
+    setBrandingPermissions(prev => ({
+      ...prev,
+      [constraint]: {
+        ...prev[constraint],
+        [role]: { ...prev[constraint][role], [key]: value },
+      },
+    }))
+    setDirty(true)
+    setSaved(false)
+  }
+  const [socialPlatforms, setSocialPlatforms] = useState<Record<string, boolean>>({
+    x: true, instagram: true, google: false, threads: false, bluesky: false,
+  })
+
+  const toggleSocialPlatform = (id: string) => {
+    setSocialPlatforms(prev => ({ ...prev, [id]: !prev[id] }))
+    setDirty(true)
+    setSaved(false)
+  }
   const [dirty, setDirty] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const graphicsRef = useRef<HTMLDivElement>(null)
+  const brandingRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const target = section === 'branding' ? brandingRef.current : graphicsRef.current
+    if (!target || !scrollRef.current) return
+    const offset = target.offsetTop - 24
+    scrollRef.current.scrollTo({ top: offset, behavior: 'smooth' })
+  }, [section])
 
   const toggleGraphic = (id: string) => {
     setGraphics(prev => ({ ...prev, [id]: !prev[id] }))
@@ -504,15 +1380,15 @@ export default function WorkspacePage() {
       </div>
 
       {/* ── Scrollable content ── */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0 px-[28px] py-[24px]">
-        <div className="max-w-[860px] flex flex-col gap-[28px]">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide min-h-0 px-[28px] py-[24px]">
+        <div className="max-w-[860px] mx-auto flex flex-col gap-[28px]">
 
-          {/* ── Section 1: Graphics Availability ── */}
-          <div>
+          {/* ── Section 1: Graphic Management ── */}
+          <div ref={graphicsRef}>
             <div className="flex items-start justify-between mb-[14px]">
               <div>
                 <h2 className="font-semibold text-[15px] text-[#fafaf9] mb-[4px]">
-                  Graphics Availability
+                  Graphic Management
                 </h2>
                 <p className="text-[13px] leading-[18px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
                   Control which graphic types are available to your organization's users during meetings.
@@ -550,16 +1426,111 @@ export default function WorkspacePage() {
                   enabled={!!graphics[graphic.id]}
                   onToggle={() => toggleGraphic(graphic.id)}
                   isLast={i === GRAPHICS.length - 1}
-                />
+                  permissions={graphicPermissions[graphic.id] ?? DEFAULT_ROLE_PERMISSIONS}
+                  onPermissionChange={(role, key, value) => updateGraphicPermission(graphic.id, role, key, value)}
+                >
+                  {graphic.id === 'social-feed' && (
+                    <div
+                      className="rounded-[8px] overflow-hidden"
+                      style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
+                    >
+                      <p
+                        className="px-[14px] pt-[10px] pb-[8px] text-[10px] font-semibold uppercase tracking-wide"
+                        style={{ color: 'rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                      >
+                        Platforms
+                      </p>
+                      {SOCIAL_PLATFORMS.map((platform, pi) => {
+                        const isOn = !!socialPlatforms[platform.id]
+                        return (
+                          <div
+                            key={platform.id}
+                            className="flex items-center gap-[10px] px-[14px] py-[9px]"
+                            style={{
+                              borderBottom: pi < SOCIAL_PLATFORMS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                            }}
+                          >
+                            <span style={{ color: isOn ? platform.color : 'rgba(255,255,255,0.3)', transition: 'color 0.15s' }}>
+                              <platform.Icon />
+                            </span>
+                            <span
+                              className="flex-1 text-[12px] font-medium leading-[15px]"
+                              style={{ color: isOn ? '#fafaf9' : 'rgba(255,255,255,0.4)', transition: 'color 0.15s' }}
+                            >
+                              {platform.name}
+                            </span>
+                            <Toggle on={isOn} onChange={() => toggleSocialPlatform(platform.id)} size="sm" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  {graphic.id === 'external' && (
+                    <div className="flex flex-col gap-[10px]">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        Default Source
+                      </p>
+                      {/* Source type selector */}
+                      <div
+                        className="flex gap-[2px] p-[3px] rounded-[8px]"
+                        style={{ background: 'rgba(255,255,255,0.05)' }}
+                      >
+                        {EXTERNAL_SOURCE_TYPES.map(type => (
+                          <button
+                            key={type.id}
+                            onClick={() => { setExternalContentType(type.id); setDirty(true) }}
+                            className="flex-1 flex items-center justify-center gap-[4px] py-[5px] rounded-[6px] text-[11px] font-medium transition-all border-0 cursor-pointer"
+                            style={externalContentType === type.id
+                              ? { background: 'rgba(255,255,255,0.1)', color: '#fafaf9' }
+                              : { background: 'transparent', color: 'rgba(255,255,255,0.45)' }
+                            }
+                          >
+                            <type.Icon />
+                            {type.label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Input per type */}
+                      <div style={{ display: externalContentType === 'link' ? 'block' : 'none' }}>
+                        <UrlInput value={externalLinkUrl} onChange={v => { setExternalLinkUrl(v); setDirty(true) }} placeholder="https://example.com/embed" />
+                      </div>
+                      <div style={{ display: externalContentType === 'image' ? 'block' : 'none' }}>
+                        <ImageUploader value={externalContentImageFile} onChange={v => { setExternalContentImageFile(v); setDirty(true) }} label="Upload image" hint="PNG, JPG or GIF" />
+                      </div>
+                      <div style={{ display: externalContentType === 'video' ? 'block' : 'none' }}>
+                        <UrlInput value={externalVideoUrl} onChange={v => { setExternalVideoUrl(v); setDirty(true) }} placeholder="YouTube or Vimeo URL" />
+                      </div>
+                      <div style={{ display: externalContentType === 'pdf' ? 'block' : 'none' }}>
+                        <PdfUploader value={externalContentPdfName} onChange={v => { setExternalContentPdfName(v); setDirty(true) }} />
+                      </div>
+                      <div style={{ display: externalContentType === 'slides' ? 'block' : 'none' }}>
+                        <UrlInput value={externalSlidesUrl} onChange={v => { setExternalSlidesUrl(v); setDirty(true) }} placeholder="Google Slides share link" />
+                      </div>
+                    </div>
+                  )}
+                  {graphic.id === 'waiting-room' && (
+                    <div className="flex flex-col gap-[8px]">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        Background Image
+                      </p>
+                      <ImageUploader
+                        value={waitingRoomBackground}
+                        onChange={v => { setWaitingRoomBackground(v); setDirty(true) }}
+                        label="Upload background image"
+                        hint="PNG, JPG or GIF · Recommended 1920×1080"
+                      />
+                    </div>
+                  )}
+                </GraphicRow>
               ))}
             </SectionCard>
           </div>
 
           {/* ── Section 2: Branding Constraints ── */}
-          <div>
+          <div ref={brandingRef}>
             <div className="mb-[14px]">
               <h2 className="font-semibold text-[15px] text-[#fafaf9] mb-[4px]">
-                Branding Constraints
+                Branding Guidelines
               </h2>
               <p className="text-[13px] leading-[18px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 Enforce brand consistency across all meeting graphics. These settings apply
@@ -570,45 +1541,49 @@ export default function WorkspacePage() {
             <SectionCard>
               {/* Color Palette Lock */}
               <ConstraintRow
-                Icon={LockIcon}
+
                 title="Color Palette Lock"
                 description="Restrict users to organization-approved brand colors only. Users cannot set custom colors outside this palette."
                 enabled={branding.colorLock}
                 onToggle={() => toggleBranding('colorLock')}
                 isLast={false}
               >
-                <ColorPaletteEditor colors={brandColors} onChange={c => { setBrandColors(c); setDirty(true) }} />
+                <ColorPaletteEditor palettes={brandPalettes} onChange={p => { setBrandPalettes(p); setDirty(true) }} />
               </ConstraintRow>
 
               {/* Font Override Lock */}
               <ConstraintRow
-                Icon={FontIcon}
                 title="Font Override Lock"
                 description="Prevent users from changing the default organization typeface in graphic templates."
                 enabled={branding.fontLock}
                 onToggle={() => toggleBranding('fontLock')}
                 isLast={false}
               >
-                <div className="flex items-center gap-[12px]">
-                  <div
-                    className="flex items-center gap-[10px] px-[12px] py-[8px] rounded-[8px]"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
-                  >
-                    <span className="text-[13px] font-semibold text-[#fafaf9]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Aa</span>
-                    <div>
-                      <p className="text-[12px] font-medium text-[#fafaf9] leading-[15px]">Plus Jakarta Sans</p>
-                      <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Organization default</p>
-                    </div>
-                  </div>
-                  <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    Users will see this font and cannot override it
-                  </span>
-                </div>
+                <FontPicker
+                  selected={selectedFont}
+                  onChange={f => { setSelectedFont(f); setDirty(true) }}
+                />
+              </ConstraintRow>
+
+              {/* Logo Lock */}
+              <ConstraintRow
+                title="Logo Lock"
+                description="Set the approved organization logo. This logo is used across all graphic templates and cannot be changed by users."
+                enabled={branding.logoLock}
+                onToggle={() => toggleBranding('logoLock')}
+                isLast={false}
+              >
+                <ImageUploader
+                  value={logoFile}
+                  onChange={v => { setLogoFile(v); setDirty(true) }}
+                  label="Upload organization logo"
+                  hint="PNG, SVG or JPG · Displayed at original aspect ratio"
+                />
               </ConstraintRow>
 
               {/* Custom Enterprise Graphics */}
               <ConstraintRow
-                Icon={StarIcon}
+
                 title="Custom Enterprise Graphics"
                 description="Allow users to access and activate enterprise-tier custom graphic templates created for your organization."
                 enabled={branding.customGraphics}

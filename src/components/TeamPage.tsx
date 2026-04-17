@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Role = 'User' | 'Admin'
+type Role = 'Admin' | 'Editor' | 'Viewer'
 
 interface Member {
   id: string
@@ -17,21 +17,27 @@ interface Member {
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
 const MEMBERS: Member[] = [
-  { id: '1',  initials: 'AU', avatarColor: '#3b82f6', name: 'Aaron Underwood', email: 'aaronu@breezy.com',    role: 'User',  joined: '2 hours ago'   },
-  { id: '2',  initials: 'AK', avatarColor: '#8b5cf6', name: 'Anna Kim',        email: 'akim@breezy.com',      role: 'User',  joined: '5 days ago'    },
-  { id: '3',  initials: 'BL', avatarColor: '#14b8a6', name: 'Brian Lee',       email: 'blee@breezy.com',      role: 'User',  joined: '3 days ago'    },
-  { id: '4',  initials: 'CM', avatarColor: '#f59e0b', name: 'Catherine Moss',  email: 'cmoss@breezy.com',     role: 'User',  joined: '1 day ago'     },
-  { id: '5',  initials: 'DJ', avatarColor: '#10b981', name: 'David Jones',     email: 'djones@breezy.com',    role: 'User',  joined: '2 days ago'    },
-  { id: '6',  initials: 'DR', avatarColor: '#f43f5e', name: 'Dani Ramos',      email: 'dramos@breezy.com',    role: 'User',  joined: 'Feb 21, 2026'  },
-  { id: '7',  initials: 'GH', avatarColor: '#6366f1', name: 'Grace Harper',    email: 'gharper@breezy.com',   role: 'User',  joined: 'Feb 26, 2026'  },
-  { id: '8',  initials: 'GJ', avatarColor: '#ec4899', name: 'George Jenkins',  email: 'gjenkins@breezy.com',  role: 'User',  joined: 'Mar 12, 2026'  },
-  { id: '9',  initials: 'GW', avatarColor: '#0ea5e9', name: 'Gina Watson',     email: 'gwatson@breezy.com',   role: 'User',  joined: 'Apr 05, 2026'  },
-  { id: '10', initials: 'JS', avatarColor: '#615fff', name: 'Jeff Smith',      email: 'jm.smith@breezy.com',  role: 'Admin', joined: 'Feb 15, 2026'  },
-  { id: '11', initials: 'JJ', avatarColor: '#84cc16', name: 'James Johnson',   email: 'jjohnson@breezy.com',  role: 'User',  joined: 'May 18, 2026'  },
-  { id: '12', initials: 'JW', avatarColor: '#f97316', name: 'John Wick',       email: 'jconnor@breezy.com',   role: 'User',  joined: 'Mar 10, 2026'  },
-  { id: '13', initials: 'KR', avatarColor: '#06b6d4', name: 'Kyle Reese',      email: 'kreese@breezy.com',    role: 'User',  joined: 'Mar 10, 2026'  },
-  { id: '14', initials: 'KM', avatarColor: '#a855f7', name: 'Kyle Miller',     email: 'kmiller@breezy.com',   role: 'User',  joined: 'Mar 10, 2026'  },
-  { id: '15', initials: 'LB', avatarColor: '#22c55e', name: 'Laura Brown',     email: 'lbrown@breezy.com',    role: 'User',  joined: 'Jun 5, 2026'   },
+  { id: '1',  initials: 'AU', avatarColor: '#3b82f6', name: 'Aaron Underwood', email: 'aaronu@breezy.com',    role: 'Viewer', joined: '2 hours ago'   },
+  { id: '2',  initials: 'AK', avatarColor: '#8b5cf6', name: 'Anna Kim',        email: 'akim@breezy.com',      role: 'Viewer', joined: '5 days ago'    },
+  { id: '3',  initials: 'BL', avatarColor: '#14b8a6', name: 'Brian Lee',       email: 'blee@breezy.com',      role: 'Editor', joined: '3 days ago'    },
+  { id: '4',  initials: 'CM', avatarColor: '#f59e0b', name: 'Catherine Moss',  email: 'cmoss@breezy.com',     role: 'Viewer', joined: '1 day ago'     },
+  { id: '5',  initials: 'DJ', avatarColor: '#10b981', name: 'David Jones',     email: 'djones@breezy.com',    role: 'Editor', joined: '2 days ago'    },
+  { id: '6',  initials: 'DR', avatarColor: '#f43f5e', name: 'Dani Ramos',      email: 'dramos@breezy.com',    role: 'Viewer', joined: 'Feb 21, 2026'  },
+  { id: '7',  initials: 'GH', avatarColor: '#6366f1', name: 'Grace Harper',    email: 'gharper@breezy.com',   role: 'Viewer', joined: 'Feb 26, 2026'  },
+  { id: '8',  initials: 'GJ', avatarColor: '#ec4899', name: 'George Jenkins',  email: 'gjenkins@breezy.com',  role: 'Editor', joined: 'Mar 12, 2026'  },
+  { id: '9',  initials: 'GW', avatarColor: '#0ea5e9', name: 'Gina Watson',     email: 'gwatson@breezy.com',   role: 'Viewer', joined: 'Apr 05, 2026'  },
+  { id: '10', initials: 'JS', avatarColor: '#615fff', name: 'Jeff Smith',      email: 'jm.smith@breezy.com',  role: 'Admin',  joined: 'Feb 15, 2026'  },
+  { id: '11', initials: 'JJ', avatarColor: '#84cc16', name: 'James Johnson',   email: 'jjohnson@breezy.com',  role: 'Viewer', joined: 'May 18, 2026'  },
+  { id: '12', initials: 'JW', avatarColor: '#f97316', name: 'John Wick',       email: 'jconnor@breezy.com',   role: 'Viewer', joined: 'Mar 10, 2026'  },
+  { id: '13', initials: 'KR', avatarColor: '#06b6d4', name: 'Kyle Reese',      email: 'kreese@breezy.com',    role: 'Editor', joined: 'Mar 10, 2026'  },
+  { id: '14', initials: 'KM', avatarColor: '#a855f7', name: 'Kyle Miller',     email: 'kmiller@breezy.com',   role: 'Viewer', joined: 'Mar 10, 2026'  },
+  { id: '15', initials: 'LB', avatarColor: '#22c55e', name: 'Laura Brown',     email: 'lbrown@breezy.com',    role: 'Viewer', joined: 'Jun 5, 2026'   },
+]
+
+const ROLE_OPTIONS: { role: Role; description: string }[] = [
+  { role: 'Admin',  description: 'Full control over all graphics, members and settings' },
+  { role: 'Editor', description: 'Can create and edit graphics'                         },
+  { role: 'Viewer', description: 'Can view and apply graphics during meeting but not edit' },
 ]
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -170,18 +176,92 @@ function Checkbox({ checked, indeterminate = false, onChange }: CheckboxProps) {
   )
 }
 
-function RoleChip({ role }: { role: Role }) {
-  const isAdmin = role === 'Admin'
+function CheckSmIcon() {
   return (
-    <div
-      className="inline-flex items-center gap-[4px] px-[8px] py-[3px] rounded-[6px] cursor-pointer select-none"
-      style={{
-        background: isAdmin ? 'rgba(2,131,255,0.12)' : 'rgba(255,255,255,0.06)',
-        color: isAdmin ? '#60a5fa' : 'rgba(255,255,255,0.65)',
-      }}
-    >
-      <span className="text-[12px] font-medium">{role}</span>
-      <ChevronDownSmIcon />
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2 6L4.5 8.5L10 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+const ROLE_STYLE: Record<Role, { bg: string; color: string }> = {
+  Admin:  { bg: 'rgba(97,95,255,0.14)',  color: '#a5b4fc' },
+  Editor: { bg: 'rgba(2,131,255,0.12)',  color: '#60a5fa' },
+  Viewer: { bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.65)' },
+}
+
+interface RoleDropdownProps {
+  role: Role
+  onChange: (r: Role) => void
+}
+
+function RoleDropdown({ role, onChange }: RoleDropdownProps) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const { bg, color } = ROLE_STYLE[role]
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="inline-flex items-center gap-[4px] px-[8px] py-[3px] rounded-[6px] cursor-pointer border-0 select-none transition-opacity hover:opacity-80"
+        style={{ background: bg, color }}
+      >
+        <span className="text-[12px] font-medium">{role}</span>
+        <ChevronDownSmIcon />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden py-[4px] min-w-[220px]"
+          style={{
+            background: '#1c1d21',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          }}
+        >
+          {ROLE_OPTIONS.map(({ role: r, description }) => {
+            const isActive = r === role
+            const s = ROLE_STYLE[r]
+            return (
+              <button
+                key={r}
+                onClick={() => { onChange(r); setOpen(false) }}
+                className="w-full flex items-start justify-between gap-[10px] px-[14px] py-[10px] cursor-pointer border-0 text-left transition-colors"
+                style={{ background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+              >
+                <div className="flex flex-col gap-[2px]">
+                  <span
+                    className="text-[12px] font-semibold px-[6px] py-[1px] rounded-[5px] self-start"
+                    style={{ background: s.bg, color: s.color }}
+                  >
+                    {r}
+                  </span>
+                  <span className="text-[11px] leading-[15px] mt-[3px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    {description}
+                  </span>
+                </div>
+                {isActive && (
+                  <span className="shrink-0 mt-[2px]" style={{ color: '#60a5fa' }}>
+                    <CheckSmIcon />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -191,6 +271,9 @@ function RoleChip({ role }: { role: Role }) {
 export default function TeamPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
+  const [roles, setRoles] = useState<Record<string, Role>>(
+    Object.fromEntries(MEMBERS.map(m => [m.id, m.role]))
+  )
 
   const allSelected = selectedIds.size === MEMBERS.length
   const someSelected = selectedIds.size > 0 && !allSelected
@@ -343,7 +426,10 @@ export default function TeamPage() {
                     <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{member.email}</span>
                   </td>
                   <td className="px-[8px] py-[13px]">
-                    <RoleChip role={member.role} />
+                    <RoleDropdown
+                      role={roles[member.id] ?? member.role}
+                      onChange={r => setRoles(prev => ({ ...prev, [member.id]: r }))}
+                    />
                   </td>
                   <td className="px-[8px] py-[13px]">
                     <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{member.joined}</span>
