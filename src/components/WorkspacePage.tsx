@@ -2082,7 +2082,8 @@ interface BrandingState {
   customGraphics: boolean
 }
 
-export default function WorkspacePage({ section }: { section: 'graphics' | 'branding' }) {
+export default function WorkspacePage() {
+  const [activeTab, setActiveTab] = useState<'graphics' | 'branding'>('graphics')
   const [graphics, setGraphics] = useState<GraphicState>({
     logo: true, ticker: true, timer: true, agenda: true,
     qa: true, poll: false, external: false, 'waiting-room': true,
@@ -2144,12 +2145,6 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
   const brandingRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const target = section === 'branding' ? brandingRef.current : graphicsRef.current
-    if (!target || !scrollRef.current) return
-    const offset = target.offsetTop - 24
-    scrollRef.current.scrollTo({ top: offset, behavior: 'smooth' })
-  }, [section])
 
   const toggleGraphic = (id: string) => {
     setGraphics(prev => ({ ...prev, [id]: !prev[id] }))
@@ -2183,10 +2178,12 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
           <h1 className="font-semibold text-[18px] text-[#fafaf9] leading-[22px]">
             Workspace
           </h1>
-          <div className="w-px h-[16px]" style={{ background: 'rgba(255,255,255,0.1)' }} />
-          <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            {enabledCount} of {GRAPHICS.length} graphics enabled
-          </span>
+          {activeTab === 'graphics' && <>
+            <div className="w-px h-[16px]" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              {enabledCount} of {GRAPHICS.length} graphics enabled
+            </span>
+          </>}
         </div>
 
         <div className="flex items-center gap-[10px]">
@@ -2221,12 +2218,43 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
         </div>
       </div>
 
+      {/* ── Tab strip ── */}
+      <div
+        className="flex items-center gap-[4px] shrink-0 px-[28px]"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', height: 44 }}
+      >
+        {([
+          { id: 'graphics' as const, label: 'Graphics Library' },
+          { id: 'branding' as const, label: 'Branding Guidelines' },
+        ]).map(({ id, label }) => {
+          const isActive = activeTab === id
+          return (
+            <button
+              key={id}
+              onClick={() => { setActiveTab(id); scrollRef.current?.scrollTo({ top: 0 }) }}
+              className="relative flex items-center h-full px-[14px] text-[13px] font-medium cursor-pointer border-0 bg-transparent transition-colors"
+              style={{ color: isActive ? '#fafaf9' : 'rgba(255,255,255,0.45)' }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.75)' }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+            >
+              {label}
+              {isActive && (
+                <span
+                  className="absolute bottom-0 left-0 right-0 h-[2px] rounded-t-full"
+                  style={{ background: '#615fff' }}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
       {/* ── Scrollable content ── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide min-h-0 px-[28px] py-[24px]">
         <div className="max-w-[860px] mx-auto flex flex-col gap-[28px]">
 
           {/* ── Section 1: Graphics Library ── */}
-          <div ref={graphicsRef}>
+          {activeTab === 'graphics' && <div ref={graphicsRef}>
             <div className="flex items-start justify-between mb-[14px]">
               <div>
                 <h2 className="font-semibold text-[15px] text-[#fafaf9] mb-[4px]">
@@ -2489,10 +2517,10 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
             </SectionCard>
               )
             })()}
-          </div>
+          </div>}
 
           {/* ── Section 2: Branding Constraints ── */}
-          <div ref={brandingRef}>
+          {activeTab === 'branding' && <div ref={brandingRef}>
             <div className="mb-[14px]">
               <h2 className="font-semibold text-[15px] text-[#fafaf9] mb-[4px]">
                 Branding Guidelines
@@ -2577,7 +2605,7 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
                 </div>
               </ConstraintRow>
             </SectionCard>
-          </div>
+          </div>}
 
           {/* Bottom spacing */}
           <div className="h-[8px]" />

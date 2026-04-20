@@ -4,7 +4,7 @@ import WorkspacePage from './WorkspacePage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Page = 'team' | 'workspace-graphics' | 'workspace-branding'
+type Page = 'team' | 'workspace'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -56,7 +56,7 @@ interface AdminSidebarProps {
 }
 
 function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
-  const isWorkspace = activePage === 'workspace-graphics' || activePage === 'workspace-branding'
+  const isWorkspace = activePage === 'workspace'
 
   return (
     <aside
@@ -105,9 +105,9 @@ function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
           <span className="font-medium text-[13px] leading-[16px]">Team</span>
         </button>
 
-        {/* Workspace parent */}
+        {/* Workspace */}
         <button
-          onClick={() => onNavigate('workspace-graphics')}
+          onClick={() => onNavigate('workspace')}
           className="flex items-center gap-[10px] w-full px-[12px] py-[8px] rounded-[8px] cursor-pointer border-0 transition-colors text-left"
           style={isWorkspace
             ? { background: 'rgba(255,255,255,0.08)', color: '#fafaf9' }
@@ -119,42 +119,6 @@ function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
           <LayersIcon className="shrink-0" />
           <span className="font-medium text-[13px] leading-[16px]">Workspace</span>
         </button>
-
-        {/* Workspace child items — shown when workspace is active */}
-        {isWorkspace && (
-          <div className="flex flex-col gap-[1px] pl-[8px]">
-            {/* Left indent line */}
-            <div className="relative">
-              <div
-                className="absolute left-[11px] top-0 bottom-0 w-px"
-                style={{ background: 'rgba(255,255,255,0.08)' }}
-              />
-              <div className="flex flex-col gap-[1px] pl-[20px]">
-                {([
-                  { id: 'workspace-graphics' as Page, label: 'Graphics Library' },
-                  { id: 'workspace-branding' as Page, label: 'Branding Guidelines' },
-                ]).map(({ id, label }) => {
-                  const isActive = activePage === id
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => onNavigate(id)}
-                      className="w-full px-[10px] py-[6px] rounded-[6px] cursor-pointer border-0 transition-colors text-left"
-                      style={isActive
-                        ? { background: 'rgba(255,255,255,0.07)', color: '#fafaf9' }
-                        : { background: 'transparent', color: 'rgba(255,255,255,0.45)' }
-                      }
-                      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#fafaf9' } }}
-                      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' } }}
-                    >
-                      <span className="text-[12px] font-medium leading-[15px]">{label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* Bottom section */}
@@ -204,7 +168,7 @@ function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
 // ─── Admin Portal ─────────────────────────────────────────────────────────────
 
 export default function AdminPortal() {
-  const [activePage, setActivePage] = useState<Page>('team')
+  const [activePage, setActivePage] = useState<Page>('workspace')
 
   return (
     <div
@@ -214,9 +178,7 @@ export default function AdminPortal() {
       <AdminSidebar activePage={activePage} onNavigate={setActivePage} />
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {activePage === 'team' && <TeamPage />}
-        {(activePage === 'workspace-graphics' || activePage === 'workspace-branding') && (
-          <WorkspacePage section={activePage === 'workspace-branding' ? 'branding' : 'graphics'} />
-        )}
+        {activePage === 'workspace' && <WorkspacePage />}
       </main>
     </div>
   )
