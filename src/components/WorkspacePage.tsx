@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type GraphicId = 'logo' | 'ticker' | 'timer' | 'agenda' | 'qa' | 'poll' | 'external' | 'waiting-room' | 'nametag' | 'social-feed'
+type GraphicId = 'logo' | 'ticker' | 'timer' | 'agenda' | 'qa' | 'poll' | 'external' | 'waiting-room' | 'nametag' | 'social-feed' | 'lower-third' | 'scoreboard' | 'sponsor-banner'
 type Badge = 'default' | 'enterprise'
 type PermissionKey = 'add' | 'edit' | 'view' | 'interact'
 
@@ -190,33 +190,6 @@ function SponsorBannerIcon({ className }: { className?: string }) {
   )
 }
 
-function LockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="15" height="15" viewBox="0 0 15 15" fill="none">
-      <rect x="2" y="6.5" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M4.5 6.5V4.5C4.5 3.12 5.62 2 7 2H8C9.38 2 10.5 3.12 10.5 4.5V6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="7.5" cy="10.5" r="1" fill="currentColor" />
-    </svg>
-  )
-}
-
-function FontIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="15" height="15" viewBox="0 0 15 15" fill="none">
-      <path d="M2 12L5.5 3H6.5L10 12M3.5 9H8.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M11.5 6V12M11.5 6C11.5 5 12 4.5 13 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M11.5 9C11.5 9 12 10 13 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function StarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="15" height="15" viewBox="0 0 15 15" fill="none">
-      <path d="M7.5 1.5L9.18 5.33L13.5 5.81L10.5 8.64L11.36 13L7.5 10.84L3.64 13L4.5 8.64L1.5 5.81L5.82 5.33L7.5 1.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 function PlusSmIcon() {
   return (
@@ -2155,23 +2128,6 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
 
   const [brandThemes, setBrandThemes] = useState<ColorTheme[]>(BRAND_THEMES_DEFAULT)
   const [selectedFonts, setSelectedFonts] = useState<string[]>(['Plus Jakarta Sans'])
-  const [brandingPermissions, setBrandingPermissions] = useState<GraphicPermissionMap>({
-    colorLock:      { ...DEFAULT_ROLE_PERMISSIONS },
-    fontLock:       { ...DEFAULT_ROLE_PERMISSIONS },
-    customGraphics: { ...DEFAULT_ROLE_PERMISSIONS },
-  })
-
-  const updateBrandingPermission = (constraint: string, role: string, key: PermissionKey, value: boolean) => {
-    setBrandingPermissions(prev => ({
-      ...prev,
-      [constraint]: {
-        ...prev[constraint],
-        [role]: { ...prev[constraint][role], [key]: value },
-      },
-    }))
-    setDirty(true)
-    setSaved(false)
-  }
   const [socialPlatforms, setSocialPlatforms] = useState<Record<string, boolean>>({
     x: true, instagram: true, google: false, threads: false, bluesky: false,
   })
