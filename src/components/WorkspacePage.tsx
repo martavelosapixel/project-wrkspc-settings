@@ -2222,77 +2222,8 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
       </div>
 
       {/* ── Scrollable content ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide min-h-0 px-[28px] pb-[24px]">
-        {/* Search + filter tabs + view toggle — sticky, only in graphics section */}
-        {section === 'graphics' && (
-          <div
-            className="flex items-center gap-[8px] sticky top-0 z-10"
-            style={{ background: '#0a0b0d', paddingTop: 16, paddingBottom: 12, marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            <div className="relative flex items-center flex-1">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="absolute left-[9px] pointer-events-none" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M9 9L11.5 11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-              <input
-                type="text"
-                value={graphicSearch}
-                onChange={e => setGraphicSearch(e.target.value)}
-                placeholder="Search graphics…"
-                className="w-full text-[12px] pl-[28px] pr-[10px] rounded-[8px] border-0 outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', color: '#fafaf9', height: 34 }}
-              />
-            </div>
-            <div className="flex gap-[2px] p-[3px] rounded-[8px] shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
-              {(['all', 'default', 'enterprise'] as const).map(tab => {
-                const count = tab === 'all' ? GRAPHICS.length : GRAPHICS.filter(g => g.badge === tab).length
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setGraphicFilter(tab)}
-                    className="flex items-center gap-[5px] text-[12px] font-medium px-[12px] py-[5px] rounded-[6px] capitalize cursor-pointer border-0 transition-all"
-                    style={graphicFilter === tab
-                      ? { background: 'rgba(255,255,255,0.1)', color: '#fafaf9' }
-                      : { background: 'transparent', color: 'rgba(255,255,255,0.45)' }}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    <span
-                      className="text-[10px] font-semibold px-[5px] py-[1px] rounded-full"
-                      style={{
-                        background: graphicFilter === tab ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
-                        color: graphicFilter === tab ? '#fafaf9' : 'rgba(255,255,255,0.35)',
-                      }}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-            <div className="flex gap-[2px] p-[3px] rounded-[8px] shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
-              {(['list', 'card'] as const).map(v => (
-                <button
-                  key={v}
-                  onClick={() => setGraphicView(v)}
-                  className="flex items-center justify-center rounded-[6px] border-0 cursor-pointer transition-all"
-                  style={{
-                    width: 28, height: 28,
-                    background: graphicView === v ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: graphicView === v ? '#fafaf9' : 'rgba(255,255,255,0.4)',
-                  }}
-                  title={v === 'list' ? 'List view' : 'Card view'}
-                >
-                  {v === 'list'
-                    ? <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 3h11M1 6.5h11M1 10h11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
-                    : <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /><rect x="7.5" y="1" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /><rect x="1" y="7.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /><rect x="7.5" y="7.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /></svg>
-                  }
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="max-w-[860px] mx-auto flex flex-col gap-[28px]" style={{ paddingTop: section === 'graphics' ? 0 : 24 }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide min-h-0 px-[28px] py-[24px]">
+        <div className="max-w-[860px] mx-auto flex flex-col gap-[28px]">
 
           {/* ── Section 1: Graphics Library ── */}
           <div ref={graphicsRef}>
@@ -2329,6 +2260,69 @@ export default function WorkspacePage({ section }: { section: 'graphics' | 'bran
               </div>
             </div>
 
+            {/* Search + filter tabs + view toggle */}
+            <div className="flex items-center gap-[8px] mb-[12px]">
+              <div className="relative flex items-center flex-1">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="absolute left-[9px] pointer-events-none" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M9 9L11.5 11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+                <input
+                  type="text"
+                  value={graphicSearch}
+                  onChange={e => setGraphicSearch(e.target.value)}
+                  placeholder="Search graphics…"
+                  className="w-full text-[12px] pl-[28px] pr-[10px] rounded-[8px] border-0 outline-none"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fafaf9', height: 34 }}
+                />
+              </div>
+              <div className="flex gap-[2px] p-[3px] rounded-[8px] shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                {(['all', 'default', 'enterprise'] as const).map(tab => {
+                  const count = tab === 'all' ? GRAPHICS.length : GRAPHICS.filter(g => g.badge === tab).length
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setGraphicFilter(tab)}
+                      className="flex items-center gap-[5px] text-[12px] font-medium px-[12px] py-[5px] rounded-[6px] capitalize cursor-pointer border-0 transition-all"
+                      style={graphicFilter === tab
+                        ? { background: 'rgba(255,255,255,0.1)', color: '#fafaf9' }
+                        : { background: 'transparent', color: 'rgba(255,255,255,0.45)' }}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      <span
+                        className="text-[10px] font-semibold px-[5px] py-[1px] rounded-full"
+                        style={{
+                          background: graphicFilter === tab ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
+                          color: graphicFilter === tab ? '#fafaf9' : 'rgba(255,255,255,0.35)',
+                        }}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="flex gap-[2px] p-[3px] rounded-[8px] shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                {(['list', 'card'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setGraphicView(v)}
+                    className="flex items-center justify-center rounded-[6px] border-0 cursor-pointer transition-all"
+                    style={{
+                      width: 28, height: 28,
+                      background: graphicView === v ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      color: graphicView === v ? '#fafaf9' : 'rgba(255,255,255,0.4)',
+                    }}
+                    title={v === 'list' ? 'List view' : 'Card view'}
+                  >
+                    {v === 'list'
+                      ? <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 3h11M1 6.5h11M1 10h11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                      : <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /><rect x="7.5" y="1" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /><rect x="1" y="7.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /><rect x="7.5" y="7.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" /></svg>
+                    }
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {(() => {
               const filtered = GRAPHICS
