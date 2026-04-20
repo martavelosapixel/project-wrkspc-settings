@@ -4,7 +4,7 @@ import type { Plan } from './AdminPortal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type GraphicId = 'logo' | 'ticker' | 'timer' | 'agenda' | 'qa' | 'poll' | 'external' | 'waiting-room' | 'nametag' | 'social-feed' | 'lower-third' | 'scoreboard' | 'sponsor-banner' | 'custom-template' | 'custom-overlay' | 'custom-widget'
+type GraphicId = 'logo' | 'ticker' | 'timer' | 'agenda' | 'qa' | 'poll' | 'external' | 'waiting-room' | 'nametag' | 'social-feed' | 'lower-third' | 'scoreboard' | 'sponsor-banner'
 type Badge = 'default' | 'enterprise' | 'custom'
 type PermissionKey = 'add' | 'edit' | 'view' | 'interact'
 
@@ -192,35 +192,6 @@ function SponsorBannerIcon({ className }: { className?: string }) {
 }
 
 
-function CustomTemplateIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M5 8H11M8 5V11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function CustomOverlayIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M5 5H11M5 8H9M5 11H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function CustomWidgetIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="9" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  )
-}
-
 function PlusSmIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -253,12 +224,6 @@ const GRAPHICS: Graphic[] = [
   { id: 'lower-third',    name: 'Lower Third',      description: 'Branded speaker name and title overlay anchored to the bottom frame', badge: 'enterprise', Icon: LowerThirdIcon     },
   { id: 'scoreboard',     name: 'Scoreboard',       description: 'Live score display for competitions, debates and sports events',      badge: 'enterprise', Icon: ScoreboardIcon     },
   { id: 'sponsor-banner', name: 'Sponsor Banner',   description: 'Rotating sponsor logos and branded ad placements during the meeting', badge: 'enterprise', Icon: SponsorBannerIcon  },
-]
-
-const CUSTOM_GRAPHICS: Graphic[] = [
-  { id: 'custom-template', name: 'Custom Template', description: 'Create and publish your own fully branded graphic template',          badge: 'custom', Icon: CustomTemplateIcon },
-  { id: 'custom-overlay',  name: 'Custom Overlay',  description: 'Design a full-screen custom overlay for your meetings',              badge: 'custom', Icon: CustomOverlayIcon  },
-  { id: 'custom-widget',   name: 'Custom Widget',   description: 'Build a custom sidebar or corner widget to display live data',       badge: 'custom', Icon: CustomWidgetIcon   },
 ]
 
 const BRAND_THEMES_DEFAULT: ColorTheme[] = [
@@ -2182,7 +2147,7 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
   const [activeTab, setActiveTab] = useState<'graphics' | 'branding'>('graphics')
   const ALL_GRAPHICS = plan === 'enterprise'
     ? GRAPHICS
-    : [...GRAPHICS.filter(g => g.badge !== 'enterprise'), ...CUSTOM_GRAPHICS]
+    : GRAPHICS.map(g => g.badge === 'enterprise' ? { ...g, badge: 'custom' as Badge } : g)
 
   // Reset filter when plan changes so stale 'enterprise'/'custom' tab doesn't persist
   useEffect(() => { setGraphicFilter('all') }, [plan])
