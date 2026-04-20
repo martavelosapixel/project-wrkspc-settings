@@ -268,7 +268,7 @@ function RoleDropdown({ role, onChange }: RoleDropdownProps) {
 
 // ─── TeamPage ─────────────────────────────────────────────────────────────────
 
-export default function TeamPage() {
+export default function TeamPage({ plan = 'enterprise' }: { plan?: 'enterprise' | 'team' }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [roles, setRoles] = useState<Record<string, Role>>(
@@ -309,9 +309,9 @@ export default function TeamPage() {
           </h1>
           <div className="w-px h-[16px] shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
           <div className="flex items-center gap-[16px]">
-            <SeatBadge count={151} label="In use"    type="in-use"    />
-            <SeatBadge count={124} label="Available" type="available" />
-            <SeatBadge count={275} label="Purchased" type="purchased" />
+            <SeatBadge count={plan === 'team' ? 110 : 151} label="In use"    type="in-use"    />
+            <SeatBadge count={plan === 'team' ?  24 : 124} label="Available" type="available" />
+            <SeatBadge count={plan === 'team' ? 134 : 275} label="Purchased" type="purchased" />
           </div>
         </div>
 

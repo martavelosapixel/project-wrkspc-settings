@@ -2180,7 +2180,7 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
   const [graphicView, setGraphicView] = useState<'list' | 'card'>('list')
 
   const [graphicPermissions, setGraphicPermissions] = useState<GraphicPermissionMap>(() =>
-    Object.fromEntries([...GRAPHICS, ...CUSTOM_GRAPHICS].map(g => [g.id, { ...DEFAULT_ROLE_PERMISSIONS }]))
+    Object.fromEntries(GRAPHICS.map(g => [g.id, { ...DEFAULT_ROLE_PERMISSIONS }]))
   )
 
   const updateGraphicPermission = (graphicId: string, role: string, key: PermissionKey, value: boolean) => {
@@ -2252,6 +2252,14 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
             <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
               {enabledCount} of {ALL_GRAPHICS.length} graphics enabled
             </span>
+          </>}
+          {plan === 'team' && <>
+            <div className="w-px h-[16px]" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <div className="flex items-center gap-[6px]">
+              <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                <span className="font-semibold" style={{ color: '#fafaf9' }}>134</span> seats purchased
+              </span>
+            </div>
           </>}
         </div>
 
