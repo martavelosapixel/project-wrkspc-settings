@@ -527,7 +527,7 @@ function BadgeChip({ type }: { type: Badge }) {
         className="text-[10px] font-medium px-[7px] py-[2px] rounded-full"
         style={{ color: '#93c5fd', background: 'rgba(2,131,255,0.12)' }}
       >
-        Enterprise
+        Custom
       </span>
     )
   }
@@ -2420,7 +2420,7 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
                         ? { background: 'rgba(255,255,255,0.1)', color: '#fafaf9' }
                         : { background: 'transparent', color: 'rgba(255,255,255,0.45)' }}
                     >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      {tab === 'enterprise' ? 'Custom' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                       <span
                         className="text-[10px] font-semibold px-[5px] py-[1px] rounded-full"
                         style={{
