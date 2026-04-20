@@ -2132,6 +2132,7 @@ export default function WorkspacePage() {
   const [socialPlatforms, setSocialPlatforms] = useState<Record<string, boolean>>({
     x: true, instagram: true, google: false, threads: false, bluesky: false,
   })
+  const [platformsOpen, setPlatformsOpen] = useState(false)
 
   const toggleSocialPlatform = (id: string) => {
     setSocialPlatforms(prev => ({ ...prev, [id]: !prev[id] }))
@@ -2407,13 +2408,22 @@ export default function WorkspacePage() {
                       className="rounded-[8px]"
                       style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
                     >
-                      <p
-                        className="px-[14px] pt-[10px] pb-[8px] text-[10px] font-semibold uppercase tracking-wide"
-                        style={{ color: 'rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                      <button
+                        onClick={() => setPlatformsOpen(v => !v)}
+                        className="flex items-center justify-between w-full px-[14px] pt-[10px] pb-[10px] cursor-pointer border-0 bg-transparent text-left"
+                        style={{ borderBottom: platformsOpen ? '1px solid rgba(255,255,255,0.05)' : 'none' }}
                       >
-                        Platforms
-                      </p>
-                      {SOCIAL_PLATFORMS.map((platform, pi) => {
+                        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                          Platforms
+                        </span>
+                        <svg
+                          width="12" height="12" viewBox="0 0 12 12" fill="none"
+                          style={{ color: 'rgba(255,255,255,0.3)', transform: platformsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                        >
+                          <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      {platformsOpen && SOCIAL_PLATFORMS.map((platform, pi) => {
                         const isOn = !!socialPlatforms[platform.id]
                         return (
                           <div
