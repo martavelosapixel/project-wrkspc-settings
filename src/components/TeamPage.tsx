@@ -423,7 +423,7 @@ export default function TeamPage({ plan = 'enterprise' }: { plan?: 'enterprise' 
                     </div>
                   </td>
                   <td className="px-[8px] py-[13px]">
-                    <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{member.email}</span>
+                    <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{plan === 'team' ? member.email.replace('@breezy.com', '@loom.com') : member.email}</span>
                   </td>
                   <td className="px-[8px] py-[13px]">
                     <RoleDropdown

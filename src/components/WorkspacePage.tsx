@@ -1636,7 +1636,7 @@ const PREVIEW_GRAPHICS = [
   { id: 'score-board',  name: 'Score Board' },
 ]
 
-function NameTagPreview({ primary, secondary }: { primary: string; secondary: string }) {
+function NameTagPreview({ primary, secondary, company }: { primary: string; secondary: string; company: string }) {
   return (
     <div style={{ width: 170, background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
       <div style={{ height: 5, background: primary }} />
@@ -1647,21 +1647,21 @@ function NameTagPreview({ primary, secondary }: { primary: string; secondary: st
         <div>
           <p style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', margin: 0, lineHeight: 1.2 }}>Jeff Smith</p>
           <p style={{ fontSize: 10, color: '#888', margin: '3px 0 0', lineHeight: 1.2 }}>Product Designer</p>
-          <p style={{ fontSize: 10, fontWeight: 600, color: primary, margin: '3px 0 0', lineHeight: 1.2 }}>Breezy Corp</p>
+          <p style={{ fontSize: 10, fontWeight: 600, color: primary, margin: '3px 0 0', lineHeight: 1.2 }}>{company}</p>
         </div>
       </div>
     </div>
   )
 }
 
-function LowerThirdPreview({ primary, secondary, font }: { primary: string; secondary: string; font: string }) {
+function LowerThirdPreview({ primary, secondary, font, company }: { primary: string; secondary: string; font: string; company: string }) {
   return (
     <div style={{ width: 170 }}>
       <div style={{ background: primary, padding: '7px 12px 5px' }}>
         <p style={{ fontSize: 13, fontWeight: 700, color: font, margin: 0, lineHeight: 1.2 }}>Jeff Smith</p>
       </div>
       <div style={{ background: 'rgba(20,21,24,0.92)', padding: '5px 12px 7px', borderLeft: `3px solid ${secondary}` }}>
-        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.4 }}>Product Designer · Breezy Corp</p>
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.4 }}>Product Designer · {company}</p>
       </div>
     </div>
   )
@@ -1689,7 +1689,7 @@ function ScoreBoardPreview({ primary, secondary, font }: { primary: string; seco
   )
 }
 
-function ThemePreview({ themes }: { themes: ColorTheme[] }) {
+function ThemePreview({ themes, company }: { themes: ColorTheme[]; company: string }) {
   const [graphicIdx, setGraphicIdx] = useState(0)
   const [themeIdx, setThemeIdx] = useState(0)
   const safeThemeIdx = Math.min(themeIdx, Math.max(0, themes.length - 1))
@@ -1735,8 +1735,8 @@ function ThemePreview({ themes }: { themes: ColorTheme[] }) {
         className="flex-1 flex items-center justify-center py-[22px] px-[14px]"
         style={{ background: '#141518', minHeight: 148 }}
       >
-        {graphic.id === 'name-tag'    && <NameTagPreview    primary={primary} secondary={secondary} />}
-        {graphic.id === 'lower-third' && <LowerThirdPreview primary={primary} secondary={secondary} font={font} />}
+        {graphic.id === 'name-tag'    && <NameTagPreview    primary={primary} secondary={secondary} company={company} />}
+        {graphic.id === 'lower-third' && <LowerThirdPreview primary={primary} secondary={secondary} font={font} company={company} />}
         {graphic.id === 'score-board' && <ScoreBoardPreview primary={primary} secondary={secondary} font={font} />}
       </div>
 
@@ -1774,7 +1774,7 @@ function ThemePreview({ themes }: { themes: ColorTheme[] }) {
 
 // ─── Font preview ─────────────────────────────────────────────────────────────
 
-function NameTagFontPreview({ fontFamily }: { fontFamily: string }) {
+function NameTagFontPreview({ fontFamily, company }: { fontFamily: string; company: string }) {
   return (
     <div style={{ width: 170, background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
       <div style={{ height: 5, background: '#615fff' }} />
@@ -1785,21 +1785,21 @@ function NameTagFontPreview({ fontFamily }: { fontFamily: string }) {
         <div>
           <p style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', margin: 0, lineHeight: 1.2, fontFamily }}>Jeff Smith</p>
           <p style={{ fontSize: 10, color: '#888', margin: '3px 0 0', lineHeight: 1.2, fontFamily }}>Product Designer</p>
-          <p style={{ fontSize: 10, fontWeight: 600, color: '#615fff', margin: '3px 0 0', lineHeight: 1.2, fontFamily }}>Breezy Corp</p>
+          <p style={{ fontSize: 10, fontWeight: 600, color: '#615fff', margin: '3px 0 0', lineHeight: 1.2, fontFamily }}>{company}</p>
         </div>
       </div>
     </div>
   )
 }
 
-function LowerThirdFontPreview({ fontFamily }: { fontFamily: string }) {
+function LowerThirdFontPreview({ fontFamily, company }: { fontFamily: string; company: string }) {
   return (
     <div style={{ width: 170 }}>
       <div style={{ background: '#615fff', padding: '7px 12px 5px' }}>
         <p style={{ fontSize: 13, fontWeight: 700, color: '#fafaf9', margin: 0, lineHeight: 1.2, fontFamily }}>Jeff Smith</p>
       </div>
       <div style={{ background: 'rgba(20,21,24,0.92)', padding: '5px 12px 7px', borderLeft: '3px solid #ffa726' }}>
-        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.4, fontFamily }}>Product Designer · Breezy Corp</p>
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.4, fontFamily }}>Product Designer · {company}</p>
       </div>
     </div>
   )
@@ -1827,7 +1827,7 @@ function ScoreBoardFontPreview({ fontFamily }: { fontFamily: string }) {
   )
 }
 
-function FontPreview({ fonts }: { fonts: string[] }) {
+function FontPreview({ fonts, company }: { fonts: string[]; company: string }) {
   const [graphicIdx, setGraphicIdx] = useState(0)
   const [fontIdx, setFontIdx] = useState(0)
   const safeFontIdx = Math.min(fontIdx, Math.max(0, fonts.length - 1))
@@ -1879,8 +1879,8 @@ function FontPreview({ fonts }: { fonts: string[] }) {
       >
         {fonts.length === 0
           ? <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center' }}>Add a font to preview</p>
-          : graphic.id === 'name-tag'    ? <NameTagFontPreview    fontFamily={fontFamily} />
-          : graphic.id === 'lower-third' ? <LowerThirdFontPreview fontFamily={fontFamily} />
+          : graphic.id === 'name-tag'    ? <NameTagFontPreview    fontFamily={fontFamily} company={company} />
+          : graphic.id === 'lower-third' ? <LowerThirdFontPreview fontFamily={fontFamily} company={company} />
           : <ScoreBoardFontPreview fontFamily={fontFamily} />
         }
       </div>
@@ -2631,7 +2631,7 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
                   <div className="flex-1 min-w-0">
                     <ColorThemeEditor themes={brandThemes} onChange={t => { setBrandThemes(t); setDirty(true) }} />
                   </div>
-                  <ThemePreview themes={brandThemes} />
+                  <ThemePreview themes={brandThemes} company={plan === 'team' ? 'Loom' : 'Breezy Corp'} />
                 </div>
               </ConstraintRow>
 
@@ -2650,7 +2650,7 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
                       onChange={f => { setSelectedFonts(f); setDirty(true) }}
                     />
                   </div>
-                  <FontPreview fonts={selectedFonts} />
+                  <FontPreview fonts={selectedFonts} company={plan === 'team' ? 'Loom' : 'Breezy Corp'} />
                 </div>
               </ConstraintRow>
 

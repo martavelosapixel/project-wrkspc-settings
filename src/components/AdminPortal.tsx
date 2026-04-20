@@ -78,7 +78,7 @@ function AdminSidebar({ activePage, onNavigate, plan }: AdminSidebarProps) {
         </div>
         <div className="flex flex-col min-w-0">
           <span className="font-semibold text-[13px] text-[#fafaf9] leading-[17px] truncate">
-            Breezy's Workspace
+            {plan === 'team' ? "Loom's Workspace" : "Breezy's Workspace"}
           </span>
           <div className="flex items-center gap-[6px]">
             <span className="text-[11px] leading-[15px] truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -168,7 +168,7 @@ function AdminSidebar({ activePage, onNavigate, plan }: AdminSidebarProps) {
           <div className="flex flex-col min-w-0 flex-1">
             <span className="font-medium text-[12px] text-[#fafaf9] leading-[15px] truncate">Jeff Smith</span>
             <span className="text-[10px] leading-[13px] truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              jmt.smith@breezy.com
+              {plan === 'team' ? 'jmt.smith@loom.com' : 'jmt.smith@breezy.com'}
             </span>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function AdminPortal() {
               <path d="M8 3.5V5M8 11V12.5M3.5 8H5M11 8H12.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
           </div>
-          <span className="text-[12px] font-semibold text-[#fafaf9]">Breezy</span>
+          <span className="text-[12px] font-semibold text-[#fafaf9]">{plan === 'team' ? 'Loom' : 'Breezy'}</span>
         </div>
 
         {/* Plan switcher — centred */}
