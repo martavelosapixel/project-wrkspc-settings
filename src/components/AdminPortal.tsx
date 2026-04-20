@@ -202,9 +202,9 @@ export default function AdminPortal() {
           className="flex gap-[2px] p-[3px] rounded-[8px] absolute left-1/2 -translate-x-1/2"
           style={{ background: 'rgba(255,255,255,0.05)' }}
         >
-          {(['enterprise', 'team'] as Plan[]).map(p => {
+          {(['team', 'enterprise'] as Plan[]).map(p => {
             const isActive = plan === p
-            const label = p === 'enterprise' ? 'Enterprise' : 'Team Plan'
+            const label = p === 'enterprise' ? 'Enterprise Plan' : 'Team Plan'
             return (
               <button
                 key={p}

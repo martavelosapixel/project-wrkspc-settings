@@ -2697,11 +2697,11 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
                 />
               </ConstraintRow>
 
-              {/* Custom Enterprise Graphics */}
+              {/* Custom Team Graphics */}
               <ConstraintRow
 
-                title="Custom Enterprise Graphics"
-                description="Allow users to access and activate enterprise-tier custom graphic templates created for your organization."
+                title="Custom Team Graphics"
+                description="Allow users to access and activate team-tier custom graphic templates created for your organization."
                 enabled={branding.customGraphics}
                 onToggle={() => toggleBranding('customGraphics')}
                 isLast={true}
