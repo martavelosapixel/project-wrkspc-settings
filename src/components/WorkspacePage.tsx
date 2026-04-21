@@ -1621,6 +1621,246 @@ function AddColorButton({ onAdd }: { onAdd: (color: string) => void }) {
   )
 }
 
+// ─── Color utilities ──────────────────────────────────────────────────────────
+
+function hexToHsv(hex: string): [number, number, number] {
+  const c = hex.replace('#', '').padEnd(6, '0')
+  const r = parseInt(c.slice(0, 2), 16) / 255
+  const g = parseInt(c.slice(2, 4), 16) / 255
+  const b = parseInt(c.slice(4, 6), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min
+  let h = 0
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d + 6) % 6
+    else if (max === g) h = (b - r) / d + 2
+    else h = (r - g) / d + 4
+    h *= 60
+  }
+  return [h, max === 0 ? 0 : d / max, max]
+}
+
+function hsvToHex(h: number, s: number, v: number): string {
+  const f = (n: number) => {
+    const k = (n + h / 60) % 6
+    return Math.round((v - v * s * Math.max(0, Math.min(k, 4 - k, 1))) * 255)
+      .toString(16).padStart(2, '0')
+  }
+  return `#${f(5)}${f(3)}${f(1)}`
+}
+
+function hueColor(h: number): string { return hsvToHex(h, 1, 1) }
+
+// ─── Color Picker Popup ───────────────────────────────────────────────────────
+
+function ColorPickerPopup({ color, onColorChange, onDelete, onClose, anchorRect }: {
+  color: string
+  onColorChange: (c: string) => void
+  onDelete: () => void
+  onClose: () => void
+  anchorRect: DOMRect
+}) {
+  const [hsv, setHsv] = useState<[number, number, number]>(() => hexToHsv(color))
+  const [hexInput, setHexInput] = useState(() => color.replace('#', '').toUpperCase())
+  const [opacity, setOpacity] = useState(100)
+  const gradRef = useRef<HTMLDivElement>(null)
+  const hueRef = useRef<HTMLDivElement>(null)
+  const opRef = useRef<HTMLDivElement>(null)
+  const dragging = useRef<'grad' | 'hue' | 'op' | null>(null)
+  const hsvRef = useRef(hsv)
+  hsvRef.current = hsv
+
+  const [h, s, v] = hsv
+  const currentHex = hsvToHex(h, s, v)
+
+  // Notify parent on every HSV change
+  useEffect(() => {
+    onColorChange(currentHex)
+    setHexInput(currentHex.replace('#', '').toUpperCase())
+  }, [currentHex])
+
+  const applyGrad = (e: MouseEvent | React.MouseEvent) => {
+    if (!gradRef.current) return
+    const r = gradRef.current.getBoundingClientRect()
+    const ns = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
+    const nv = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height))
+    setHsv([hsvRef.current[0], ns, nv])
+  }
+  const applyHue = (e: MouseEvent | React.MouseEvent) => {
+    if (!hueRef.current) return
+    const r = hueRef.current.getBoundingClientRect()
+    const nh = Math.max(0, Math.min(360, (e.clientX - r.left) / r.width * 360))
+    setHsv([nh, hsvRef.current[1], hsvRef.current[2]])
+  }
+  const applyOp = (e: MouseEvent | React.MouseEvent) => {
+    if (!opRef.current) return
+    const r = opRef.current.getBoundingClientRect()
+    setOpacity(Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * 100))
+  }
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (dragging.current === 'grad') applyGrad(e)
+      if (dragging.current === 'hue') applyHue(e)
+      if (dragging.current === 'op') applyOp(e)
+    }
+    const onUp = () => { dragging.current = null }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  }, [])
+
+  const handleHexInput = (val: string) => {
+    setHexInput(val.toUpperCase())
+    if (/^[0-9A-Fa-f]{6}$/.test(val)) setHsv(hexToHsv('#' + val))
+  }
+
+  // Position: prefer below anchor, shift left if overflows right
+  const PICKER_W = 236, PICKER_H = 340
+  const top = anchorRect.bottom + 8
+  let left = anchorRect.left
+  if (left + PICKER_W > window.innerWidth - 8) left = window.innerWidth - PICKER_W - 8
+
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-[60]" onClick={onClose} />
+      <div
+        className="fixed z-[61] rounded-[14px] overflow-hidden"
+        style={{
+          top, left, width: PICKER_W,
+          background: '#1c1d22',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Gradient area */}
+        <div
+          ref={gradRef}
+          style={{
+            width: '100%', height: 160, position: 'relative', cursor: 'crosshair',
+            background: hueColor(h),
+          }}
+          onMouseDown={e => { dragging.current = 'grad'; applyGrad(e) }}
+        >
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #fff, transparent)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent, #000)' }} />
+          <div style={{
+            position: 'absolute',
+            left: `${s * 100}%`, top: `${(1 - v) * 100}%`,
+            width: 14, height: 14, borderRadius: '50%',
+            border: '2px solid white',
+            transform: 'translate(-50%, -50%)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+            pointerEvents: 'none',
+            background: currentHex,
+          }} />
+        </div>
+
+        <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Hue slider */}
+          <div
+            ref={hueRef}
+            style={{
+              height: 12, borderRadius: 6, cursor: 'pointer', position: 'relative',
+              background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)',
+            }}
+            onMouseDown={e => { dragging.current = 'hue'; applyHue(e) }}
+          >
+            <div style={{
+              position: 'absolute', top: '50%', left: `${h / 360 * 100}%`,
+              transform: 'translate(-50%,-50%)',
+              width: 16, height: 16, borderRadius: '50%',
+              background: hueColor(h), border: '2px solid white',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none',
+            }} />
+          </div>
+
+          {/* Opacity slider */}
+          <div
+            ref={opRef}
+            style={{
+              height: 12, borderRadius: 6, cursor: 'pointer', position: 'relative',
+              background: `linear-gradient(to right,transparent,${currentHex}),repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 0 0/8px 8px`,
+            }}
+            onMouseDown={e => { dragging.current = 'op'; applyOp(e) }}
+          >
+            <div style={{
+              position: 'absolute', top: '50%', left: `${opacity}%`,
+              transform: 'translate(-50%,-50%)',
+              width: 16, height: 16, borderRadius: '50%',
+              background: currentHex, border: '2px solid white',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none',
+            }} />
+          </div>
+
+          {/* Hex + opacity inputs */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontFamily: 'inherit' }}>Hex</span>
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  <path d="M2 3L4 5L6 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: 'rgba(255,255,255,0.06)', borderRadius: 7, padding: '6px 8px',
+              }}>
+                <input
+                  value={`#${hexInput}`}
+                  onChange={e => handleHexInput(e.target.value.replace('#', ''))}
+                  maxLength={7}
+                  style={{
+                    background: 'transparent', border: 'none', outline: 'none',
+                    color: '#fafaf9', fontSize: 12, fontFamily: 'monospace', width: '100%',
+                  }}
+                />
+              </div>
+            </div>
+            <div style={{ width: 64, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0)', fontFamily: 'inherit' }}>·</span>
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                background: 'rgba(255,255,255,0.06)', borderRadius: 7, padding: '6px 8px',
+              }}>
+                <input
+                  value={opacity}
+                  onChange={e => setOpacity(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                  type="number" min={0} max={100}
+                  style={{
+                    background: 'transparent', border: 'none', outline: 'none',
+                    color: '#fafaf9', fontSize: 12, width: '100%', fontFamily: 'inherit',
+                  }}
+                />
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Delete color */}
+          <button
+            onClick={() => { onDelete(); onClose() }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              width: '100%', padding: '8px', borderRadius: 8, border: 'none',
+              background: 'rgba(239,68,68,0.08)', color: '#f87171',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.16)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)' }}
+          >
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M1.5 3H9.5M4 3V2H7V3M4.5 5V8.5M6.5 5V8.5M2 3L2.5 9.5H8.5L9 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Delete color
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body
+  )
+}
+
 // ─── Swatch row helper (shared across theme palette slots) ───────────────────
 
 function SwatchRow({
@@ -1631,32 +1871,60 @@ function SwatchRow({
   onRemove: (i: number) => void
   onAdd: (color: string) => void
 }) {
+  const [editing, setEditing] = useState<{ idx: number; rect: DOMRect } | null>(null)
+
   return (
     <div className="flex items-center flex-wrap gap-[8px]">
       {colors.map((color, i) => (
         <div key={i} className="relative group/swatch">
-          <label className="block cursor-pointer">
-            <input type="color" value={color} onChange={e => onEdit(i, e.target.value)} className="sr-only" />
-            <div
-              className="w-[28px] h-[28px] rounded-[7px] transition-transform group-hover/swatch:scale-110"
-              style={{ background: color, border: '2px solid rgba(255,255,255,0.15)' }}
-            />
-          </label>
-          <button
-            onClick={() => onRemove(i)}
-            className="absolute -top-[4px] -right-[4px] w-[13px] h-[13px] rounded-full bg-[#1a1b1e] border border-[rgba(255,255,255,0.15)] items-center justify-center cursor-pointer hidden group-hover/swatch:flex z-10"
-            style={{ color: 'rgba(255,255,255,0.6)' }}
-          >
-            <svg width="6" height="6" viewBox="0 0 7 7" fill="none">
-              <path d="M1 1L6 6M6 1L1 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-          </button>
+          {/* Swatch */}
           <div
-            className="absolute bottom-[34px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:block pointer-events-none px-[7px] py-[3px] rounded-[5px] whitespace-nowrap z-10"
-            style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="w-[28px] h-[28px] rounded-[7px] cursor-pointer transition-transform group-hover/swatch:scale-110"
+            style={{ background: color, border: editing?.idx === i ? '2px solid white' : '2px solid rgba(255,255,255,0.15)' }}
+          />
+
+          {/* Hover tooltip: hex + edit button */}
+          <div
+            className="absolute bottom-[36px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:flex flex-col items-center gap-[4px] pointer-events-none z-20"
+            style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' }}
           >
-            <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">{color}</span>
+            {/* Edit button */}
+            <button
+              className="pointer-events-auto flex items-center justify-center w-[28px] h-[28px] rounded-[7px] border-0 cursor-pointer"
+              style={{ background: '#ffffff' }}
+              onClick={e => {
+                e.stopPropagation()
+                const rect = (e.currentTarget.parentElement?.previousElementSibling as HTMLElement)?.getBoundingClientRect()
+                  ?? e.currentTarget.getBoundingClientRect()
+                setEditing(prev => prev?.idx === i ? null : { idx: i, rect })
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M1.5 10.5H4L9.5 5L7 2.5L1.5 8V10.5Z" stroke="#333" strokeWidth="1.3" strokeLinejoin="round" />
+                <path d="M7 2.5L9.5 5" stroke="#333" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+            </button>
+            {/* Hex label */}
+            <div
+              className="px-[7px] py-[3px] rounded-[5px] whitespace-nowrap"
+              style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">{color}</span>
+            </div>
+            {/* Arrow */}
+            <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #2a2b2e' }} />
           </div>
+
+          {/* Color picker popup */}
+          {editing?.idx === i && (
+            <ColorPickerPopup
+              color={color}
+              anchorRect={editing.rect}
+              onColorChange={c => onEdit(i, c)}
+              onDelete={() => { onRemove(i); setEditing(null) }}
+              onClose={() => setEditing(null)}
+            />
+          )}
         </div>
       ))}
       {colors.length < 6 && <AddColorButton onAdd={onAdd} />}
@@ -2467,7 +2735,7 @@ export default function WorkspacePage({ plan = 'enterprise' }: { plan?: Plan }) 
       </div>
 
       {/* ── Scrollable content ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide min-h-0 px-[28px] pb-[24px]">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide min-h-0 px-[40px] pb-[24px]">
         <div className="max-w-[860px] mx-auto flex flex-col gap-[28px]">
 
           {/* ── Section 1: Graphics Library ── */}
