@@ -2310,6 +2310,35 @@ function ThemePreview({ themes, company, activeColors, fontFamily }: {
 function EnterpriseBrandingGuidelines({ themes, fonts }: { themes: ColorTheme[]; fonts: string[] }) {
   const [contactOpen, setContactOpen] = useState(false)
 
+  // Selection state: which swatch is active per row — key is `${themeId}-${slotKey}`
+  const [selectedIdx, setSelectedIdx] = useState<Record<string, number | null>>(() => {
+    const t = themes[0]
+    if (!t) return {}
+    return {
+      [`${t.id}-primary`]:   t.primary.length   > 0 ? 0 : null,
+      [`${t.id}-secondary`]: t.secondary.length > 0 ? 0 : null,
+      [`${t.id}-font`]:      t.font.length      > 0 ? 0 : null,
+    }
+  })
+
+  // Derive the active colors for the preview from the current selection
+  const activeColors = (() => {
+    const result: { primary?: string | null; secondary?: string | null; font?: string | null } = {}
+    for (const theme of themes) {
+      for (const key of ['primary', 'secondary', 'font'] as const) {
+        const rowKey = `${theme.id}-${key}`
+        const idx = selectedIdx[rowKey]
+        if (idx != null) result[key] = theme[key][idx] ?? null
+      }
+    }
+    return result
+  })()
+
+  const handleSwatchClick = (themeId: string, slotKey: string, idx: number) => {
+    const rowKey = `${themeId}-${slotKey}`
+    setSelectedIdx(prev => ({ ...prev, [rowKey]: prev[rowKey] === idx ? null : idx }))
+  }
+
   return (
     <div className="flex flex-col gap-[16px] pt-[24px]">
 
@@ -2374,22 +2403,53 @@ function EnterpriseBrandingGuidelines({ themes, fonts }: { themes: ColorTheme[];
                   <p className="text-[12px] font-semibold text-[#fafaf9] mb-[10px]">{theme.name}</p>
                   <div className="flex flex-col gap-[7px]">
                     {[
-                      { label: 'Primary',   colors: theme.primary   },
-                      { label: 'Secondary', colors: theme.secondary },
-                      { label: 'Font',      colors: theme.font      },
-                    ].map(({ label, colors }) => (
-                      <div key={label} className="flex items-center gap-[10px]">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide shrink-0 w-[64px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{label}</span>
-                        <div className="flex gap-[5px] flex-wrap">
-                          {colors.length > 0
-                            ? colors.map((c, i) => (
-                                <div key={i} style={{ width: 20, height: 20, borderRadius: 5, background: c, border: '1.5px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
-                              ))
-                            : <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>
-                          }
+                      { label: 'Primary',   slotKey: 'primary',   colors: theme.primary   },
+                      { label: 'Secondary', slotKey: 'secondary', colors: theme.secondary },
+                      { label: 'Font',      slotKey: 'font',      colors: theme.font      },
+                    ].map(({ label, slotKey, colors }) => {
+                      const rowKey = `${theme.id}-${slotKey}`
+                      const selIdx = selectedIdx[rowKey] ?? null
+                      return (
+                        <div key={label} className="flex items-center gap-[10px]">
+                          <span className="text-[10px] font-semibold uppercase tracking-wide shrink-0 w-[64px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{label}</span>
+                          <div className="flex gap-[5px] flex-wrap">
+                            {colors.length > 0
+                              ? colors.map((c, i) => {
+                                  const isSelected = selIdx === i
+                                  return (
+                                    <button
+                                      key={i}
+                                      onClick={() => handleSwatchClick(theme.id, slotKey, i)}
+                                      className="relative border-0 p-0 cursor-pointer transition-transform"
+                                      style={{
+                                        width: 24, height: 24, borderRadius: 7,
+                                        background: c,
+                                        flexShrink: 0,
+                                        outline: isSelected ? `2.5px solid ${c}` : '2.5px solid transparent',
+                                        outlineOffset: 2,
+                                        boxShadow: isSelected ? `0 0 0 1px rgba(255,255,255,0.35)` : '0 0 0 1.5px rgba(255,255,255,0.08)',
+                                        transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+                                      }}
+                                    >
+                                      {isSelected && (
+                                        <span
+                                          className="absolute inset-0 flex items-center justify-center rounded-[6px]"
+                                          style={{ background: 'rgba(0,0,0,0.18)' }}
+                                        >
+                                          <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                                            <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                          </svg>
+                                        </span>
+                                      )}
+                                    </button>
+                                  )
+                                })
+                              : <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>
+                            }
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ))}
@@ -2451,7 +2511,7 @@ function EnterpriseBrandingGuidelines({ themes, fonts }: { themes: ColorTheme[];
         </div>
 
         {/* Right: Live Preview */}
-        <ThemePreview themes={themes} company="Breezy Corp" fontFamily={fonts[0] ? `'${fonts[0]}', sans-serif` : undefined} />
+        <ThemePreview themes={themes} company="Breezy Corp" activeColors={activeColors} fontFamily={fonts[0] ? `'${fonts[0]}', sans-serif` : undefined} />
       </div>
 
       {contactOpen && <ContactServicesModal onClose={() => setContactOpen(false)} />}
