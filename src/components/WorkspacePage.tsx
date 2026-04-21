@@ -1886,8 +1886,8 @@ function SwatchRow({
             className="w-[28px] h-[28px] rounded-[7px] cursor-pointer relative overflow-hidden"
             style={{
               background: color,
-              border: isSelected ? '2px solid #0283ff' : '2px solid rgba(255,255,255,0.15)',
-              boxShadow: isSelected ? '0 0 0 1px rgba(2,131,255,0.4)' : 'none',
+              border: isSelected ? '2px solid rgba(0,0,0,0.5)' : '2px solid rgba(255,255,255,0.15)',
+              boxShadow: isSelected ? '0 0 0 2.5px #0283ff' : 'none',
               transition: 'border-color 0.15s, box-shadow 0.15s',
             }}
             onClick={() => { setSelectedIdx(isSelected ? null : i); setEditing(null) }}
@@ -1915,18 +1915,33 @@ function SwatchRow({
             )}
           </div>
 
-          {/* Hover tooltip: hex only (when NOT selected) */}
-          {!isSelected && (
-            <div className="absolute bottom-[36px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:flex flex-col items-center pointer-events-none z-20">
+          {/* Hex tooltip — always shows on hover (selected or not) */}
+          <div className="absolute bottom-[36px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:flex flex-col items-center pointer-events-none z-20">
+            {/* Edit button — only when selected */}
+            {isSelected && (
               <div
-                className="px-[7px] py-[3px] rounded-[5px] whitespace-nowrap"
-                style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+                className="pointer-events-auto mb-[4px] w-[28px] h-[28px] rounded-[7px] flex items-center justify-center cursor-pointer shadow-md"
+                style={{ background: '#ffffff' }}
+                onClick={e => {
+                  e.stopPropagation()
+                  const rect = (e.currentTarget.closest('.group\\/swatch') as HTMLElement).getBoundingClientRect()
+                  setEditing(prev => prev?.idx === i ? null : { idx: i, rect })
+                }}
               >
-                <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">{color}</span>
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path d="M1.5 10.5H4L9.5 5L7 2.5L1.5 8V10.5Z" stroke="#222" strokeWidth="1.5" strokeLinejoin="round" />
+                  <path d="M7 2.5L9.5 5" stroke="#222" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
               </div>
-              <div style={{ width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid #2a2b2e' }} />
+            )}
+            <div
+              className="px-[7px] py-[3px] rounded-[5px] whitespace-nowrap"
+              style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+            >
+              <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">{color}</span>
             </div>
-          )}
+            <div style={{ width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid #2a2b2e' }} />
+          </div>
 
           {/* Color picker popup */}
           {editing?.idx === i && (
