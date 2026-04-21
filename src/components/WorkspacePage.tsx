@@ -1871,49 +1871,62 @@ function SwatchRow({
   onRemove: (i: number) => void
   onAdd: (color: string) => void
 }) {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
   const [editing, setEditing] = useState<{ idx: number; rect: DOMRect } | null>(null)
 
   return (
     <div className="flex items-center flex-wrap gap-[8px]">
-      {colors.map((color, i) => (
+      {colors.map((color, i) => {
+        const isSelected = selectedIdx === i
+        return (
         <div key={i} className="relative group/swatch">
+
           {/* Swatch */}
           <div
-            className="w-[28px] h-[28px] rounded-[7px] cursor-pointer transition-transform group-hover/swatch:scale-110"
-            style={{ background: color, border: editing?.idx === i ? '2px solid white' : '2px solid rgba(255,255,255,0.15)' }}
-          />
-
-          {/* Hover tooltip: hex + edit button */}
-          <div
-            className="absolute bottom-[36px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:flex flex-col items-center gap-[4px] pointer-events-none z-20"
-            style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' }}
+            className="w-[28px] h-[28px] rounded-[7px] cursor-pointer relative overflow-hidden"
+            style={{
+              background: color,
+              border: isSelected ? '2px solid #0283ff' : '2px solid rgba(255,255,255,0.15)',
+              boxShadow: isSelected ? '0 0 0 1px rgba(2,131,255,0.4)' : 'none',
+              transition: 'border-color 0.15s, box-shadow 0.15s',
+            }}
+            onClick={() => { setSelectedIdx(isSelected ? null : i); setEditing(null) }}
           >
-            {/* Edit button */}
-            <button
-              className="pointer-events-auto flex items-center justify-center w-[28px] h-[28px] rounded-[7px] border-0 cursor-pointer"
-              style={{ background: '#ffffff' }}
-              onClick={e => {
-                e.stopPropagation()
-                const rect = (e.currentTarget.parentElement?.previousElementSibling as HTMLElement)?.getBoundingClientRect()
-                  ?? e.currentTarget.getBoundingClientRect()
-                setEditing(prev => prev?.idx === i ? null : { idx: i, rect })
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M1.5 10.5H4L9.5 5L7 2.5L1.5 8V10.5Z" stroke="#333" strokeWidth="1.3" strokeLinejoin="round" />
-                <path d="M7 2.5L9.5 5" stroke="#333" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
-            </button>
-            {/* Hex label */}
-            <div
-              className="px-[7px] py-[3px] rounded-[5px] whitespace-nowrap"
-              style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">{color}</span>
-            </div>
-            {/* Arrow */}
-            <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #2a2b2e' }} />
+            {/* Edit overlay — only visible on hover when swatch is selected */}
+            {isSelected && (
+              <div
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity duration-150"
+                onClick={e => {
+                  e.stopPropagation()
+                  const rect = (e.currentTarget.closest('.group\\/swatch') as HTMLElement).getBoundingClientRect()
+                  setEditing(prev => prev?.idx === i ? null : { idx: i, rect })
+                }}
+              >
+                <div
+                  className="w-[18px] h-[18px] rounded-[4px] flex items-center justify-center shadow-sm"
+                  style={{ background: '#ffffff' }}
+                >
+                  <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                    <path d="M1.5 10.5H4L9.5 5L7 2.5L1.5 8V10.5Z" stroke="#222" strokeWidth="1.5" strokeLinejoin="round" />
+                    <path d="M7 2.5L9.5 5" stroke="#222" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Hover tooltip: hex only (when NOT selected) */}
+          {!isSelected && (
+            <div className="absolute bottom-[36px] left-1/2 -translate-x-1/2 hidden group-hover/swatch:flex flex-col items-center pointer-events-none z-20">
+              <div
+                className="px-[7px] py-[3px] rounded-[5px] whitespace-nowrap"
+                style={{ background: '#2a2b2e', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+              >
+                <span className="text-[10px] font-semibold text-[#fafaf9] uppercase tracking-wide">{color}</span>
+              </div>
+              <div style={{ width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid #2a2b2e' }} />
+            </div>
+          )}
 
           {/* Color picker popup */}
           {editing?.idx === i && (
@@ -1921,12 +1934,13 @@ function SwatchRow({
               color={color}
               anchorRect={editing.rect}
               onColorChange={c => onEdit(i, c)}
-              onDelete={() => { onRemove(i); setEditing(null) }}
+              onDelete={() => { onRemove(i); setEditing(null); setSelectedIdx(null) }}
               onClose={() => setEditing(null)}
             />
           )}
         </div>
-      ))}
+        )
+      })}
       {colors.length < 6 && <AddColorButton onAdd={onAdd} />}
     </div>
   )
